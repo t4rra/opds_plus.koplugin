@@ -11,7 +11,7 @@
 
 # OPDS Plus - Enhanced OPDS Browser for KOReader
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 **OPDS Plus** is a feature-rich enhancement of KOReader's built-in OPDS catalog browser, providing visual book cover displays, multiple viewing modes, and extensive customization options for browsing online book catalogs.
 
@@ -21,6 +21,9 @@
 - **Visual Book Covers**: Browse catalogs with book cover images displayed alongside titles
 - **Dual View Modes**: Switch between List View and Grid View layouts
 - **Multiple Display Options**: Customize how books are presented
+- **Book Info Dialog**: Open an at-a-glance details dialog with improved cover handling
+- **Sync Gesture Actions**: Trigger sync-related actions directly from configured gestures
+- **Cover Quality + Cache**: Improved cover rendering pipeline with disk-backed caching
 
 ### 🖼️ List View
 - Book covers displayed alongside title and author information
@@ -85,6 +88,9 @@
    - **Windows**: Extract to `%APPDATA%/koreader/plugins/`
    - **macOS**: Extract to `~/Library/Application Support/koreader/plugins/`
 
+  For complete platform-specific install/upgrade paths, see the KOReader wiki:
+  [KOReader Installation/Upgrading](https://github.com/koreader/koreader/wiki#installationupgrading)
+
    The archive should extract to create an `opds_plus.koplugin` directory containing all plugin files.
 
 3. **Restart KOReader**: Close and reopen KOReader to load the plugin
@@ -148,6 +154,18 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Extra Large (20%): Maximum cover visibility
   - Custom: Fine-tune between 5-25%
 
+#### Cover Settings (New in 1.2.0)
+- **Prefer Large Covers**:
+  - Enabled: prioritizes higher-quality cover sources when available.
+  - Disabled: prefers faster thumbnail sources.
+- **Enable Cover Cache**:
+  - Enabled: reuses previously downloaded covers.
+  - Disabled: fetches covers from the server each time.
+- **Advanced Cache Controls**:
+  - Cache Size (MB)
+  - Cache TTL (minutes)
+  - Clear Cover Cache
+
 #### Grid View Settings
 - **Grid Layout**:
   - Compact: 4 columns, more books visible
@@ -172,6 +190,28 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Bold/regular weight
   - Color: Dark Gray or Black
 
+### Sync Actions & Settings (New in 1.2.0)
+
+- **Direct Sync Actions**:
+  - Sync all catalogs
+  - Force sync all catalogs
+- **Gesture Integration**:
+  - Actions are registered in KOReader's dispatcher as:
+    - `OPDS Plus: Sync all catalogs`
+    - `OPDS Plus: Force sync all catalogs`
+  - These can be assigned in KOReader's gesture/action configuration.
+- **Catalog Sync Controls**:
+  - Per-catalog sync and force-sync via catalog long-press actions.
+  - Sync folder selection.
+  - Maximum sync download count.
+  - Filetype filtering for sync downloads.
+
+### Book Info Dialog (New in 1.2.0)
+
+- Tapping a book now opens a book info dialog before download.
+- Dialog includes cover preview and at-a-glance metadata for faster decisions.
+- Download actions are available directly from the dialog flow.
+
 ### Adding Your Own Catalogs
 
 1. Go to **OPDS Plus Catalog → Settings → Manage Catalogs**
@@ -190,16 +230,48 @@ Access settings from: **OPDS Plus Catalog → Settings**
 ### File Structure
 ```
 opds_plus.koplugin/
-├── _meta.lua                 # Plugin metadata
-├── main.lua                  # Main plugin initialization and settings
-├── opdsbrowserplus.lua       # Catalog browser logic
-├── opdslistmenuplus.lua      # List view implementation
-├── opdsgridmenuplus.lua      # Grid view implementation
-├── opdscovermenuplus.lua     # Cover display components
-├── opdsparser.lua            # OPDS feed parsing
-├── opdspse.lua               # Page state engine
-├── image_loader.lua          # Cover image loading
-└── url_content.lua           # Network content fetching
+├── _meta.lua
+├── main.lua
+├── opds_plus_version.lua
+├── config/
+│   ├── settings.lua
+│   └── settings_menu.lua
+├── core/
+│   ├── browser_context.lua
+│   ├── catalog_manager.lua
+│   ├── download_manager.lua
+│   ├── feed_fetcher.lua
+│   ├── navigation_handler.lua
+│   ├── parser.lua
+│   ├── state_manager.lua
+│   └── sync_manager.lua
+├── models/
+│   └── constants.lua
+├── services/
+│   ├── cover_cache.lua
+│   ├── cover_loader.lua
+│   ├── http_client.lua
+│   ├── image_loader.lua
+│   └── kavita.lua
+├── ui/
+│   ├── browser.lua
+│   ├── utils.lua
+│   ├── dialogs/
+│   │   ├── book_info_dialog.lua
+│   │   ├── download_builder.lua
+│   │   ├── menu_builder.lua
+│   │   └── settings_dialogs.lua
+│   └── menus/
+│       ├── cover_menu.lua
+│       ├── grid_menu.lua
+│       └── list_menu.lua
+└── utils/
+    ├── button_dialog_builder.lua
+    ├── catalog_utils.lua
+    ├── debug.lua
+    ├── file_utils.lua
+    ├── result.lua
+    └── url_utils.lua
 ```
 
 ### Settings Storage

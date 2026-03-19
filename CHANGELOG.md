@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-19
+
+### Added
+- **Book Info Dialog**: Added a dedicated dialog with at-a-glance book metadata and improved cover handling.
+- **Direct Sync Gesture Actions**: Added action-oriented gesture events for faster sync and navigation workflows.
+- **Improved Cover Pipeline**: Added higher-quality cover loading with disk-backed cache and lifecycle-safe image handling.
+- **New Cover Settings**:
+  - Prefer Large Covers (quality-first source selection)
+  - Enable Cover Cache toggle
+  - Advanced cache controls: max size, TTL, and manual cache clear
+- **Sync Dispatcher Integration**:
+  - Added explicit dispatcher actions for `Sync all catalogs` and `Force sync all catalogs`
+  - Supports direct invocation from KOReader gesture/action mapping
+
+### Changed
+- **Debug Architecture Refactor**:
+  - Standardized debug logging through shared utility usage.
+  - Extended state manager integration across UI menu components.
+  - Removed obsolete facade/dead code and simplified loader signatures.
+- **CI Maintenance**:
+  - Updated GitHub Actions dependencies for checkout and artifact upload/download workflows.
+
+### Fixed
+- **Gesture Registration**: Fixed gesture registration failures (Issue #58).
+- **Duplicate PDF Entries**: Prevented duplicate PDF files from being shown in results (Issue #57).
+- **Book Info Dialog Stability**:
+  - Fixed filename capture timing to avoid nil values.
+  - Corrected cover widget and related dialog behavior.
+  - Removed invalid imports and corrected build wiring.
+
+### Notes
+- This release includes merged community and maintenance pull requests together with issue-resolution fixes.
+- Packaging layout improvements from prior releases are retained and compatible with the current codebase structure.
+- New settings are available under **OPDS Plus Catalog → Settings → Cover Settings**.
+- Sync actions can be used from catalog long-press workflows or mapped through KOReader dispatcher actions.
+
 ## [1.1.0] - 2025-01-18
 
 ### Added
@@ -78,5 +114,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - Derivative of KOReader's built-in OPDS plugin with major UI/UX enhancements.
 - Licensed under AGPLv3 consistent with KOReader.
 
+[1.2.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.2.0
 [1.1.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.1.0
 [1.0.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.0.0
