@@ -370,6 +370,12 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
             browser.sync_change_summary = nil
         end
 
+        if browser.sync and browser.sync_requires_refresh then
+            UIManager:broadcastEvent(Event:new("RefreshContent"))
+            UIManager:broadcastEvent(Event:new("BookMetadataChanged"))
+            browser.sync_requires_refresh = nil
+        end
+
         StateManager.getInstance():markDirty()
         return duplicate_list
     end

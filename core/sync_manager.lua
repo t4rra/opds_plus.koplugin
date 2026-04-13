@@ -1,6 +1,7 @@
 -- Sync Manager for OPDS Browser
 -- Handles catalog synchronization, sync settings, and batch downloads
 local Device = require("device")
+local Event = require("ui/event")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local SpinWidget = require("ui/widget/spinwidget")
@@ -29,6 +30,11 @@ local function startDownloadsOrNotify(browser)
     if #browser.pending_syncs > 0 then
         Trapper:wrap(function() SyncManager.downloadPendingSyncs(browser) end)
     else
+        if browser.sync_requires_refresh then
+            UIManager:broadcastEvent(Event:new("RefreshContent"))
+            UIManager:broadcastEvent(Event:new("BookMetadataChanged"))
+            browser.sync_requires_refresh = nil
+        end
         UIManager:show(InfoMessage:new{text = _("Up to date!")})
     end
 end
@@ -276,6 +282,8 @@ function SyncManager.checkAndStartSync(browser, server_idx)
     end
 
     local added_count = #browser.pending_syncs
+    browser.sync_requires_refresh = (added_count > 0 or deleted_count > 0) and
+                                        true or nil
     if added_count > 0 or deleted_count > 0 then
         browser.sync_change_summary = {
             added = added_count,
