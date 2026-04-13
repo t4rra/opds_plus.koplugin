@@ -2,152 +2,68 @@
 
 **Version:** 1.2.1 (t4rra fork)
 
-**Fork:** I added an option to "mirror sync" a catalog and added metadata writing for downloaded books. Developed with LLMs so it's not production ready, this was made for personal use. 
+**What's New:** I added an option to "mirror sync" a catalog and added metadata writing for downloaded books. Developed with LLMs so it's not production ready, this was made for personal use. 
 
 **OPDS Plus** is a feature-rich enhancement of KOReader's built-in OPDS catalog browser, providing visual book cover displays, multiple viewing modes, and extensive customization options for browsing online book catalogs.
 
-## ✨ Features
-
-### 📚 Enhanced Catalog Browsing
-
-- **Visual Book Covers**: Browse catalogs with book cover images displayed alongside titles
-- **Dual View Modes**: Switch between List View and Grid View layouts
-- **Multiple Display Options**: Customize how books are presented
-- **Book Info Dialog**: Open an at-a-glance details dialog with improved cover handling
-- **Sync Gesture Actions**: Trigger sync-related actions directly from configured gestures
-- **Mirror Sync Option**: Keep synced catalogs aligned with catalog - i.e. files on device not present on catalog will be deleted
-- **Cover Quality + Cache**: Improved cover rendering pipeline with disk-backed caching
-- **OPDS Metadata Sidecars**: Save book metadata next to downloaded files for better integration
-
-### 🖼️ List View
-
-- Book covers displayed alongside title and author information
-- Adjustable cover sizes with presets (Compact, Regular, Large, Extra Large)
-- Custom size option (5-25% of screen height)
-- Clean, readable layout optimized for e-readers
-
-### 📊 Grid View
-
-- Display books in a grid layout for visual browsing
-- Flexible column options (2-4 columns)
-- Layout presets: Compact (4 cols), Balanced (3 cols), Spacious (2 cols)
-- Customizable grid borders:
-  - No Borders: Clean, borderless grid
-  - Hash Grid: Shared borders in a # pattern
-  - Individual Tiles: Each book has its own border
-- Adjustable border thickness (1-5px) and color (Light Gray, Dark Gray, Black)
-
-### 🎨 Customization Options
-
-- **Font Selection**: Choose from KOReader's built-in fonts or your custom fonts
-- **Independent Font Settings**: Separate customization for titles and details
-  - Font family selection
-  - Font size adjustment
-  - Bold/regular weight toggle
-  - Color options (Dark Gray, Black)
-- **Same Font Mode**: Option to use matching fonts for consistent appearance
-- **Persistent Settings**: All preferences are saved between sessions
-
-### 📖 Default Catalogs Included
-
-- Project Gutenberg
-- Standard Ebooks
-- ManyBooks
-- Internet Archive
-- textos.info (Spanish)
-- Gallica (French)
-
-## 📸 Screenshots
-
-|                        **List View**                        |                        **Grid View**                        |
-| :---------------------------------------------------------: | :---------------------------------------------------------: |
-| ![List View with Covers](.github/screenshots/list_view.png) | ![Grid View with Covers](.github/screenshots/grid_view.png) |
-|          _Classic list view with cover thumbnails_          |            _Immersive grid layout for browsing_             |
-
-|                       **View Options**                        |                    **Customization**                    |
-| :-----------------------------------------------------------: | :-----------------------------------------------------: |
-| ![View Toggle Menu](.github/screenshots/view_toggle_menu.png) | ![Settings Menu](.github/screenshots/settings_menu.png) |
-|             _Switch views instantly via the menu_             |            _Extensive customization options_            |
-
-## 📥 Installation
-
-### Method 1: Manual Installation (Recommended)
-
+## Installation
 1. **Download the latest release**:
-   - Go to the [Releases](https://github.com/greywolf1499/opds_plus.koplugin/releases) page
-   - Download the `opds_plus.koplugin.zip` file from the latest release
+   - Go to the releases page and download the `opds_plus.koplugin.zip` file from the latest release
 
 2. **Extract to KOReader plugins directory**:
-
-   The location depends on your device:
    - **Kindle/Kobo/Android**: Extract to `/koreader/plugins/`
    - **Linux**: Extract to `~/.config/koreader/plugins/`
    - **Windows**: Extract to `%APPDATA%/koreader/plugins/`
    - **macOS**: Extract to `~/Library/Application Support/koreader/plugins/`
 
-For complete platform-specific install/upgrade paths, see the KOReader wiki:
-[KOReader Installation/Upgrading](https://github.com/koreader/koreader/wiki#installationupgrading)
+	For complete platform-specific install/upgrade paths, see the KOReader wiki: [KOReader Installation/Upgrading](https://github.com/koreader/koreader/wiki#installationupgrading)
 
-The archive should extract to create an `opds_plus.koplugin` directory containing all plugin files.
+	The archive should extract to create an `opds_plus.koplugin` directory containing all plugin files.
 
-3. **Restart KOReader**: Close and reopen KOReader to load the plugin
+3. Restart KOReader to load the plugin.
 
-4. **Verify installation**:
-   - Open KOReader's File Browser
-   - Tap the menu icon (⋮ or ≡)
-   - You should see "OPDS Plus Catalog" in the menu
+## Usage
 
-### Method 2: Git Clone (For Developers)
+### Access OPDS Plus:
+1. Open KOReader's Top Menu (while browsing a catalog or on the home screen)
+2. Tap the file browser icon
+3. You should see "OPDS Plus Catalog" in the menu (if not, the plugin may not be installed correctly)
+4. Tap "OPDS Plus Catalog" to open the plugin
 
-```bash
-# Navigate to KOReader plugins directory
-cd ~/.config/koreader/plugins/  # Adjust path for your system
+### Add Catalogs:
+1. In OPDS Plus, select "Add Catalog"
+2. Enter the catalog URL and a name
+   - Optionally enable "Sync Catalog" to automatically sync this catalog's contents to local storage
+   - Optionally enable "Mirror Sync" to mirror changes from the server
+3. Save to add to your catalog list
 
-# Clone the repository
-git clone https://github.com/greywolf1499/opds_plus.koplugin.git
+### Add Collection:
+1. To sync a collection under a catalog, navigate to the collection you want to sync and tap the menu icon (⋮ or ≡) 
+2. Select the "Add catalog" option
+3. Return to the main catalog list and long-press the catalog you just added
+4. Choose "Edit" to configure sync options for this catalog
+   - Optionally enable sync/mirror sync options
+5. Save to apply settings
 
-# Restart KOReader
-```
+### Syncing:
+- To sync a catalog, long-press it in the catalog list and select "Sync"
+- A shortcut to sync will also be available in OPDS Plus's top menu, which syncs all catalogs with sync enabled
+- Gesture actions for syncing can be configured in KOReader's gesture settings under the "File Browser" category, where you will find:
+  - `OPDS Plus: Sync all catalogs`
+  - `OPDS Plus: Force sync all catalogs`
 
-### Troubleshooting Installation
+## Settings and Customization
 
-- Ensure the directory is named exactly `opds_plus.koplugin`
-- Verify all `.lua` files are present in the plugin directory
-- Check that you have write permissions to the plugins directory
-- If the plugin doesn't appear, check KOReader's crash.log for errors
-
-## 🚀 Usage
-
-### Accessing OPDS Plus
-
-1. Open KOReader's **File Browser**
-2. Tap the **menu icon** (⋮ or ≡)
-3. Select **OPDS Plus Catalog**
-
-### Browsing Catalogs
-
-#### First Time Setup
-
-- The plugin comes with several default catalogs pre-configured
-- Simply select a catalog to start browsing
-
-#### Browsing Books
-
-1. Select a catalog from the list
-2. Navigate through categories and books
-3. Tap a book to view details and download options
-4. Downloaded books are saved to your configured download directory
-
-### Customizing Settings
-
-Access settings from: **OPDS Plus Catalog → Settings**
-
-#### Display Mode
+<details>
+<summary>Display Mode</summary>
 
 - **List View**: Traditional list with covers on the left
 - **Grid View**: Visual grid layout with larger covers
 
-#### List View Settings
+</details>
+
+<details>
+<summary>List View Settings</summary>
 
 - **Cover Size**: Choose from presets or set custom size
   - Compact (8%): More books per page
@@ -156,7 +72,10 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Extra Large (20%): Maximum cover visibility
   - Custom: Fine-tune between 5-25%
 
-#### Cover Settings (New in 1.2.0)
+</details>
+
+<details>
+<summary>Cover Settings (New in 1.2.0)</summary>
 
 - **Prefer Large Covers**:
   - Enabled: prioritizes higher-quality cover sources when available.
@@ -169,7 +88,10 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Cache TTL (minutes)
   - Clear Cover Cache
 
-#### Grid View Settings
+</details>
+
+<details>
+<summary>Grid View Settings</summary>
 
 - **Grid Layout**:
   - Compact: 4 columns, more books visible
@@ -182,7 +104,10 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Thickness: 1-5 pixels
   - Color: Light Gray, Dark Gray, or Black
 
-#### Font & Text Settings
+</details>
+
+<details>
+<summary>Font & Text Settings</summary>
 
 - **Use Same Font for All**: Match title and detail fonts
 - **Title Settings**:
@@ -195,9 +120,10 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Bold/regular weight
   - Color: Dark Gray or Black
 
-### Sync Actions & Settings
+</details>
 
-For catalogs to be synced, the "sync catalog" option must be enabled in the catalog's settings menu. The option to "mirror sync" (i.e. delete local files no longer on the server) is also available for sync-enabled catalogs.
+<details>
+<summary>Syncing & Gestures</summary>
 
 - **Direct Sync Actions**:
   - Sync all catalogs
@@ -214,138 +140,4 @@ For catalogs to be synced, the "sync catalog" option must be enabled in the cata
   - Maximum sync download count.
   - Filetype filtering for sync downloads.
 
-### Book Info Dialog (New in 1.2.0)
-
-- Tapping a book now opens a book info dialog before download.
-- Dialog includes cover preview and at-a-glance metadata for faster decisions.
-- Download actions are available directly from the dialog flow.
-
-### Adding Your Own Catalogs
-
-1. Go to **OPDS Plus Catalog → Settings → Manage Catalogs**
-2. Select **Add Catalog**
-3. Enter:
-   - Catalog name
-   - OPDS feed URL
-4. The new catalog will appear in your catalog list
-
-## 🔧 Technical Details
-
-### Requirements
-
-- KOReader v2025.10, minimum
-- Network connectivity for browsing online catalogs
-
-### File Structure
-
-```
-opds_plus.koplugin/
-├── _meta.lua
-├── main.lua
-├── opds_plus_version.lua
-├── config/
-│   ├── settings.lua
-│   └── settings_menu.lua
-├── core/
-│   ├── browser_context.lua
-│   ├── catalog_manager.lua
-│   ├── download_manager.lua
-│   ├── feed_fetcher.lua
-│   ├── navigation_handler.lua
-│   ├── parser.lua
-│   ├── state_manager.lua
-│   └── sync_manager.lua
-├── models/
-│   └── constants.lua
-├── services/
-│   ├── cover_cache.lua
-│   ├── cover_loader.lua
-│   ├── http_client.lua
-│   ├── image_loader.lua
-│   ├── kavita.lua
-│   └── opds_metadata.lua
-├── ui/
-│   ├── browser.lua
-│   ├── utils.lua
-│   ├── dialogs/
-│   │   ├── book_info_dialog.lua
-│   │   ├── download_builder.lua
-│   │   ├── menu_builder.lua
-│   │   └── settings_dialogs.lua
-│   └── menus/
-│       ├── cover_menu.lua
-│       ├── grid_menu.lua
-│       └── list_menu.lua
-└── utils/
-    ├── button_dialog_builder.lua
-    ├── catalog_utils.lua
-    ├── debug.lua
-    ├── file_utils.lua
-    ├── result.lua
-    └── url_utils.lua
-```
-
-### Settings Storage
-
-Settings are stored in: `<KOReader data dir>/settings/opdsplus.lua`
-
-This file contains:
-
-- Catalog list
-- Download history
-- Sync manifest state for one-way mirror catalogs
-- Display preferences
-- Font settings
-- Grid layout configuration
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-1. **Report Bugs**: Open an issue describing the problem
-2. **Suggest Features**: Share your ideas via GitHub issues
-3. **Submit Pull Requests**:
-   - Fork the repository
-   - Create a feature branch
-   - Make your changes
-   - Submit a PR with a clear description
-
-### Development Guidelines
-
-- Follow KOReader's Lua coding conventions
-- Test on multiple screen sizes if possible
-- Ensure compatibility with existing OPDS catalogs
-- Document new features in the README
-
-## 📝 Known Issues & Limitations
-
-- Cover loading depends on catalog providing image URLs
-- Some OPDS feeds may not include cover images
-- Large catalogs may take time to load initially
-- Grid view performance varies with device capabilities
-
-## 🙏 Credits
-
-- **Original OPDS Plugin**: KOReader development team
-- **Enhancement Development**: greywolf1499
-- Built upon the excellent [KOReader](https://github.com/koreader/koreader) e-reader software
-
-## 📜 License
-
-This plugin is released under the same license as KOReader: **GNU Affero General Public License v3.0 (AGPL-3.0)**
-
-See the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-- **Issues & Bug Reports**: [GitHub Issues](https://github.com/greywolf1499/opds_plus.koplugin/issues)
-- **KOReader Documentation**: [KOReader Wiki](https://github.com/koreader/koreader/wiki)
-- **OPDS Specification**: [OPDS Spec](https://specs.opds.io/)
-
-## 🔄 Version History
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
-
----
-
-**Enjoy enhanced OPDS browsing with OPDS Plus! 📚✨**
+</details>
