@@ -3,6 +3,7 @@
 local BD = require("ui/bidi")
 local ConfirmBox = require("ui/widget/confirmbox")
 local DocumentRegistry = require("document/documentregistry")
+local Event = require("ui/event")
 local InfoMessage = require("ui/widget/infomessage")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
@@ -55,6 +56,8 @@ function DownloadManager.buildDownloadMetadata(browser, item, acquisition,
         authors = normalizeAuthors(item),
         series = item.series,
         series_index = item.series_index,
+        language = item.language,
+        keywords = item.keywords,
         summary = summary,
         opds_id = item.opds_id,
         opds_updated = item.opds_updated,
@@ -158,6 +161,10 @@ function DownloadManager.downloadFile(browser, local_path, remote_url, username,
             if not ok then
                 logger.warn("Could not write OPDS custom metadata for",
                             local_path, err)
+            else
+                UIManager:broadcastEvent(
+                    Event:new("InvalidateMetadataCache", local_path))
+                UIManager:broadcastEvent(Event:new("BookMetadataChanged"))
             end
         end
         if caller_callback then caller_callback(local_path, metadata) end

@@ -36,6 +36,9 @@ function CatalogUtils.parseEntryTitle(entry_title, default)
     if type(entry_title) == "string" then
         return entry_title
     elseif type(entry_title) == "table" then
+        if type(entry_title.text) == "string" and entry_title.text ~= "" then
+            return entry_title.text
+        end
         if type(entry_title.type) == "string" and entry_title.div ~= "" then
             return entry_title.div
         end
@@ -139,7 +142,121 @@ function CatalogUtils.parseEntrySeries(entry)
         return entry.series, tonumber(entry.series_index)
     end
 
+    local metas = entry.meta
+    if type(metas) == "table" then
+        local meta_list = metas
+        if metas.property or metas[1] == nil then meta_list = {metas} end
+
+        local series_name
+        local series_id
+        local series_index
+
+        for _, meta in ipairs(meta_list) do
+            if type(meta) == "table" then
+                local property = meta.property
+                local value = meta.text or meta.value
+                if property == "belongs-to-collection" and type(value) ==
+                    "string" and value ~= "" then
+                    series_name = value
+                    if type(meta.id) == "string" and meta.id ~= "" then
+                        series_id = "#" .. meta.id
+                    end
+                end
+            end
+        end
+
+        if series_name then
+            for _, meta in ipairs(meta_list) do
+                if type(meta) == "table" and meta.property == "group-position" then
+                    local refines = meta.refines
+                    if not series_id or refines == series_id or refines ==
+                        "series" or refines == "#series" or refines == nil then
+                        series_index = tonumber(meta.text or meta.value)
+                        if series_index then break end
+                    end
+                end
+            end
+            return series_name, series_index
+        end
+    end
+
     return nil, nil
+end
+
+--- Best-effort extraction of language metadata from OPDS entry
+-- @param entry table Raw OPDS entry table
+-- @return string|nil Language code/name
+function CatalogUtils.parseEntryLanguage(entry)
+    if type(entry) ~= "table" then return nil end
+
+    local function normalizeLanguage(value)
+        if type(value) == "string" and value ~= "" then return value end
+        if type(value) == "table" then
+            local candidate = value[1] or value.code or value.term or
+                                  value.value
+            if type(candidate) == "string" and candidate ~= "" then
+                return candidate
+            end
+        end
+        return nil
+    end
+
+    return normalizeLanguage(entry.language) or
+               normalizeLanguage(entry["dc:language"]) or
+               normalizeLanguage(entry["dcterms:language"])
+end
+
+--- Best-effort extraction of keywords metadata from OPDS entry
+-- @param entry table Raw OPDS entry table
+-- @return string|nil Newline-separated keywords string
+function CatalogUtils.parseEntryKeywords(entry)
+    if type(entry) ~= "table" then return nil end
+
+    local out = {}
+    local seen = {}
+
+    local function pushKeyword(value)
+        if type(value) ~= "string" or value == "" then return end
+        if not seen[value] then
+            seen[value] = true
+            table.insert(out, value)
+        end
+    end
+
+    local function parseCategory(category)
+        if type(category) ~= "table" then return end
+        if #category > 0 then
+            for _, cat in ipairs(category) do
+                if type(cat) == "table" then
+                    pushKeyword(cat.label or cat.term or cat.name)
+                end
+            end
+        else
+            pushKeyword(category.label or category.term or category.name)
+        end
+    end
+
+    parseCategory(entry.category)
+
+    local subjects = entry["dc:subject"] or entry["dcterms:subject"]
+    if type(subjects) == "string" then
+        pushKeyword(subjects)
+    elseif type(subjects) == "table" then
+        if #subjects > 0 then
+            for _, subject in ipairs(subjects) do
+                if type(subject) == "string" then
+                    pushKeyword(subject)
+                elseif type(subject) == "table" then
+                    pushKeyword(subject.value or subject.label or subject.term)
+                end
+            end
+        else
+            pushKeyword(subjects.value or subjects.label or subjects.term)
+        end
+    end
+
+    if #out == 0 then return nil end
+    return table.concat(out, "\n")
 end
 
 --- Extract count and last_read from PSE stream link attributes

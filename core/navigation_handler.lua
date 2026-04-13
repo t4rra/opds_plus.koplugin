@@ -183,6 +183,8 @@ function NavigationHandler.genItemTableFromCatalog(catalog, item_url,
                                                          Constants.DEFAULT_AUTHOR))
         local authors = CatalogUtils.parseEntryAuthors(entry.author)
         local series, series_index = CatalogUtils.parseEntrySeries(entry)
+        local language = CatalogUtils.parseEntryLanguage(entry)
+        local keywords = CatalogUtils.parseEntryKeywords(entry)
         if author then item.text = title .. " - " .. author end
 
         -- Add cover information for display
@@ -210,6 +212,8 @@ function NavigationHandler.genItemTableFromCatalog(catalog, item_url,
         item.authors = authors
         item.series = series
         item.series_index = series_index
+        item.language = language
+        item.keywords = keywords
         item.content = entry.content or entry.summary
         item.summary = entry.summary
         item.opds_id = entry.id

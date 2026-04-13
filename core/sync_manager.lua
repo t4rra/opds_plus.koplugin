@@ -139,9 +139,10 @@ end
 -- @param browser table OPDSBrowser instance
 -- @param server table Server configuration
 -- @param file_list table|nil Allowed filetypes map
--- @return table, boolean Set of expected local paths and manifest completeness
+-- @return table, table, boolean Set of expected local paths, item metadata map, and manifest completeness
 function SyncManager.getServerManifest(browser, server, file_list)
     local remote_files = {}
+    local file_metadata = {}
     local fetch_url = server.url
     local total_items = 0
     local saw_page = false
@@ -150,7 +151,9 @@ function SyncManager.getServerManifest(browser, server, file_list)
     while fetch_url and total_items < manifest_limit do
         local page_items = browser:genItemTableFromURL(fetch_url)
         if #page_items == 0 then
-            if not saw_page then return remote_files, false end
+            if not saw_page then
+                return remote_files, file_metadata, false
+            end
             break
         end
         saw_page = true
@@ -174,6 +177,12 @@ function SyncManager.getServerManifest(browser, server, file_list)
                                                                    acquisition.link
                                                                        .href)
                 remote_files[download_path] = true
+                file_metadata[download_path] = {
+                    entry = entry,
+                    item = item,
+                    acquisition = acquisition,
+                    filename = filename
+                }
                 total_items = total_items + 1
                 if total_items >= manifest_limit then break end
             end
@@ -186,7 +195,7 @@ function SyncManager.getServerManifest(browser, server, file_list)
 
     local is_complete = saw_page and fetch_url == nil and total_items <
                             manifest_limit
-    return remote_files, is_complete
+    return remote_files, file_metadata, is_complete
 end
 
 --- Build stale file list from previous synced manifest and current remote manifest
@@ -309,10 +318,10 @@ function SyncManager.fillPendingSyncs(browser, server)
                               Constants.SYNC.DEFAULT_MAX_DOWNLOADS
 
     local file_list = SyncManager.parseFiletypes(browser.settings.filetypes)
-    local remote_files, manifest_complete
+    local remote_files, file_metadata, manifest_complete =
+        SyncManager.getServerManifest(browser, server, file_list)
+
     if isOneWayMirrorSync(server) then
-        remote_files, manifest_complete =
-            SyncManager.getServerManifest(browser, server, file_list)
         if manifest_complete then
             local stale_files = SyncManager.getStaleLocalFiles(server,
                                                                remote_files)
@@ -326,10 +335,66 @@ function SyncManager.fillPendingSyncs(browser, server)
             logger.warn("Skipping stale cleanup due to incomplete manifest for",
                         server.title)
         end
+    else
+        -- For regular sync, also check for missing files
+        if manifest_complete then
+            browser:updateFieldInCatalog(server, "synced_files",
+                                         SyncManager.toSortedFileList(
+                                             remote_files))
+        end
     end
 
     local new_last_download = nil
     local dl_count = 1
+
+    -- Check for missing synced files and add them back to pending syncs
+    local missing_entries = {}
+    if manifest_complete and type(server.synced_files) == "table" then
+        for _, path in ipairs(server.synced_files) do
+            if not lfs.attributes(path) and remote_files[path] then
+                table.insert(missing_entries, path)
+            end
+        end
+    end
+
+    -- Add missing files back to pending syncs (highest priority, before new items)
+    local missing_count = 0
+    for _, missing_path in ipairs(missing_entries) do
+        if dl_count <= browser.sync_max_dl then
+            local metadata = file_metadata[missing_path]
+            if metadata then
+                local item = metadata.item
+                local entry = metadata.entry
+                local acquisition = metadata.acquisition
+                local filename = metadata.filename
+
+                local download_metadata =
+                    DownloadManager.buildDownloadMetadata(browser, item,
+                                                          acquisition.link,
+                                                          acquisition.filetype,
+                                                          {
+                        source_catalog = server.title,
+                        source_catalog_url = server.url,
+                        sync = true
+                    })
+                table.insert(browser.pending_syncs, {
+                    file = missing_path,
+                    url = acquisition.link.href,
+                    username = browser.root_catalog_username,
+                    password = browser.root_catalog_password,
+                    catalog = server.url,
+                    metadata = download_metadata
+                })
+                missing_count = missing_count + 1
+                dl_count = dl_count + 1
+            end
+        end
+    end
+
+    if missing_count > 0 then
+        logger.info("Sync found", missing_count,
+                    "missing files that were previously synced")
+    end
 
     local sync_list = SyncManager.getSyncDownloadList(browser)
     if sync_list then

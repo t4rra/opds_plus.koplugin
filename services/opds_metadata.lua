@@ -20,9 +20,8 @@ end
 
 local function normalizeValue(value)
     local value_type = type(value)
-    if value_type == "string" or value_type == "number" or value_type == "boolean" then
-        return value
-    end
+    if value_type == "string" or value_type == "number" or value_type ==
+        "boolean" then return value end
     if value_type == "table" then
         if isArray(value) then
             local out = {}
@@ -43,9 +42,7 @@ local function buildCustomMetadata(metadata)
     local custom = {}
     for key, value in pairs(metadata or {}) do
         local normalized = normalizeValue(value)
-        if normalized ~= nil then
-            custom[key] = normalized
-        end
+        if normalized ~= nil then custom[key] = normalized end
     end
 
     if custom.summary and not custom.description then
@@ -57,9 +54,7 @@ end
 
 local function cloneTable(value)
     local clone = {}
-    for key, item in pairs(value or {}) do
-        clone[key] = item
-    end
+    for key, item in pairs(value or {}) do clone[key] = item end
     return clone
 end
 
@@ -84,9 +79,7 @@ function OPDSMetadata.writeMetadata(book_path, metadata)
     local doc_props = cloneTable(doc_settings:readSetting("doc_props") or {})
     local original_doc_props = cloneTable(doc_props)
 
-    for key, value in pairs(normalized_metadata) do
-        doc_props[key] = value
-    end
+    for key, value in pairs(normalized_metadata) do doc_props[key] = value end
 
     doc_settings:saveSetting("doc_props", doc_props)
     doc_settings:flush()
