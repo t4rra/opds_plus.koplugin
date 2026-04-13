@@ -365,9 +365,7 @@ function SyncManager.fillPendingSyncs(browser, server)
             local metadata = file_metadata[missing_path]
             if metadata then
                 local item = metadata.item
-                local entry = metadata.entry
                 local acquisition = metadata.acquisition
-                local filename = metadata.filename
 
                 local download_metadata =
                     DownloadManager.buildDownloadMetadata(browser, item,
