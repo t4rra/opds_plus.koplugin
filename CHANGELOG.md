@@ -8,12 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Added
 
-- **One-Way Mirror Sync for Synced Catalogs**:
-  - Sync-enabled catalogs now default to one-way mirror behavior.
-  - Added stale-file cleanup flow that compares prior synced manifest state against the current server manifest.
-  - Added per-run confirmation dialog before deleting stale local files.
+- **Mirror Sync for Synced Catalogs**:
+  - New option for one-way (mirror) sync behavior, i.e. local files will be deleted if they no longer exist on the catalog
+  - Added menu option to sync for quick access
 - **OPDS Metadata Sidecars**:
-  - Successful downloads now write metadata sidecars as `book.ext.opds.json` next to downloaded files.
+  - Successful downloads now write metadata sidecars for better integration with KOReader's library and file management features.
   - Sidecars include title, authors, series/index (when available), and summary metadata.
   - Metadata writing is integrated for direct downloads, queued downloads, and sync downloads.
 

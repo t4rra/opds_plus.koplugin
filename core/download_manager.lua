@@ -350,12 +350,24 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
         end
 
         if dl_count > 0 then
+            local summary = browser.sync_change_summary
+            local text = T(N_("1 book downloaded", "%1 books downloaded",
+                              dl_count), dl_count)
+            if summary then
+                text = T(_("%1\nMirror sync changes: %2 added, %3 deleted"),
+                         text, summary.added or 0, summary.deleted or 0)
+                browser.sync_change_summary = nil
+            end
+            UIManager:show(InfoMessage:new{text = text, timeout = timeout})
+        elseif browser.sync_change_summary and
+            (browser.sync_change_summary.added or 0) > 0 then
+            local summary = browser.sync_change_summary
             UIManager:show(InfoMessage:new{
-                text = T(
-                    N_("1 book downloaded", "%1 books downloaded", dl_count),
-                    dl_count),
-                timeout = timeout
+                text = T(_("Mirror sync changes: %1 added, %2 deleted"),
+                         summary.added or 0, summary.deleted or 0),
+                timeout = Constants.UI_TIMING.DUPLICATE_NOTIFICATION_TIMEOUT
             })
+            browser.sync_change_summary = nil
         end
 
         StateManager.getInstance():markDirty()

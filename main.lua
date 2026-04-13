@@ -195,14 +195,14 @@ function OPDS:onDispatcherRegisterActions()
     Dispatcher:registerAction("opdsplus_sync_all", {
         category = "none",
         event = "StartOPDSSyncAllCatalogs",
-        title = _("OPDS Plus: Sync all catalogs (one-way mirror)"),
+        title = _("OPDS Plus: Sync all catalogs"),
         filemanager = true
     })
 
     Dispatcher:registerAction("opdsplus_force_sync_all", {
         category = "none",
         event = "StartOPDSForceSyncAllCatalogs",
-        title = _("OPDS Plus: Force sync all catalogs (overwrite existing)"),
+        title = _("OPDS Plus: Force sync all catalogs"),
         filemanager = true
     })
 end

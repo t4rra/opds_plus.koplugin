@@ -34,7 +34,7 @@ function OPDSMenuBuilder.buildOPDSMenu(browser)
                 }
             }, {}, {
                 {
-                    text = _("Sync all catalogs (one-way mirror)"),
+                    text = _("Sync all catalogs"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
@@ -46,7 +46,7 @@ function OPDSMenuBuilder.buildOPDSMenu(browser)
                 }
             }, {
                 {
-                    text = _("Force sync all catalogs (overwrite existing)"),
+                    text = _("Force sync all catalogs"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
@@ -346,7 +346,7 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
         parent = dialog
     }
     check_button_sync_mode = CheckButton:new{
-        text = _("One-way mirror sync (delete stale local files)"),
+        text = _("Mirror sync"),
         checked = not item or item.sync_mode ==
             Constants.SYNC.MODE_ONE_WAY_MIRROR,
         parent = dialog

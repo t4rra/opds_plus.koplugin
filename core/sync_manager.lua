@@ -1,7 +1,6 @@
 -- Sync Manager for OPDS Browser
 -- Handles catalog synchronization, sync settings, and batch downloads
 local Device = require("device")
-local ConfirmBox = require("ui/widget/confirmbox")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local SpinWidget = require("ui/widget/spinwidget")
@@ -236,12 +235,7 @@ function SyncManager.deleteStaleFiles(stale_files)
         end
     end
 
-    if deleted_count > 0 then
-        UIManager:show(InfoMessage:new{
-            text = T(_("Removed %1 stale synced files"), deleted_count),
-            timeout = Constants.UI_TIMING.DUPLICATE_NOTIFICATION_TIMEOUT
-        })
-    end
+    return deleted_count
 end
 
 --- Check if sync is properly configured and start sync process
@@ -276,29 +270,28 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 
     UIManager:close(info)
 
+    local deleted_count = 0
     if #browser.sync_stale_files > 0 then
-        local preview = {}
-        for i = 1, math.min(8, #browser.sync_stale_files) do
-            table.insert(preview, browser.sync_stale_files[i])
-        end
-        local details = table.concat(preview, "\n")
-        local extra = #browser.sync_stale_files > 8 and _("\n…") or ""
-        UIManager:show(ConfirmBox:new{
-            text = T(_(
-                         "One-way sync found %1 stale local files that no longer exist on the server.\n\n%2%3\n\nRemove stale files before downloading updates?"),
-                     #browser.sync_stale_files, details, extra),
-            ok_text = _("Remove stale files"),
-            ok_callback = function()
-                SyncManager.deleteStaleFiles(browser.sync_stale_files)
-                startDownloadsOrNotify(browser)
-            end,
-            cancel_callback = function()
-                startDownloadsOrNotify(browser)
-            end
-        })
-    else
-        startDownloadsOrNotify(browser)
+        deleted_count = SyncManager.deleteStaleFiles(browser.sync_stale_files)
     end
+
+    local added_count = #browser.pending_syncs
+    if added_count > 0 or deleted_count > 0 then
+        browser.sync_change_summary = {
+            added = added_count,
+            deleted = deleted_count
+        }
+        if added_count == 0 and deleted_count > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Mirror sync changes: %1 added, %2 deleted"),
+                         added_count, deleted_count),
+                timeout = Constants.UI_TIMING.DUPLICATE_NOTIFICATION_TIMEOUT
+            })
+            browser.sync_change_summary = nil
+        end
+    end
+
+    startDownloadsOrNotify(browser)
 
     browser.sync = false
 end

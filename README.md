@@ -1,17 +1,8 @@
-![OPDS Plus Banner](.github/assets/hero_banner.png)
-
-<div align="center">
-
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/greywolf1499/opds_plus.koplugin?style=for-the-badge&color=orange)
-![GitHub all releases](https://img.shields.io/github/downloads/greywolf1499/opds_plus.koplugin/total?style=for-the-badge&color=yellow)
-![GitHub](https://img.shields.io/github/license/greywolf1499/opds_plus.koplugin?style=for-the-badge&color=blue)
-![Platform](https://img.shields.io/badge/Platform-KOReader-success?style=for-the-badge&logo=koreader)
-
-</div>
-
 # OPDS Plus - Enhanced OPDS Browser for KOReader
 
-**Version:** 1.2.0
+**Version:** 1.2.1 (t4rra fork)
+
+**Fork:** I added an option to "mirror sync" a catalog and added metadata writing for downloaded books. Developed with LLMs so it's not production ready, this was made for personal use. 
 
 **OPDS Plus** is a feature-rich enhancement of KOReader's built-in OPDS catalog browser, providing visual book cover displays, multiple viewing modes, and extensive customization options for browsing online book catalogs.
 
@@ -24,9 +15,9 @@
 - **Multiple Display Options**: Customize how books are presented
 - **Book Info Dialog**: Open an at-a-glance details dialog with improved cover handling
 - **Sync Gesture Actions**: Trigger sync-related actions directly from configured gestures
-- **One-Way Mirror Sync**: Keep synced catalogs aligned with server state (with stale-file cleanup confirmation)
+- **Mirror Sync Option**: Keep synced catalogs aligned with catalog - i.e. files on device not present on catalog will be deleted
 - **Cover Quality + Cache**: Improved cover rendering pipeline with disk-backed caching
-- **OPDS Metadata Sidecars**: Save book metadata next to downloaded files for KOReader workflows
+- **OPDS Metadata Sidecars**: Save book metadata next to downloaded files for better integration
 
 ### 🖼️ List View
 
@@ -204,10 +195,12 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - Bold/regular weight
   - Color: Dark Gray or Black
 
-### Sync Actions & Settings (New in 1.2.0)
+### Sync Actions & Settings
+
+For catalogs to be synced, the "sync catalog" option must be enabled in the catalog's settings menu. The option to "mirror sync" (i.e. delete local files no longer on the server) is also available for sync-enabled catalogs.
 
 - **Direct Sync Actions**:
-  - Sync all catalogs (one-way mirror)
+  - Sync all catalogs
   - Force sync all catalogs (overwrite existing files)
 - **Gesture Integration**:
   - Actions are registered in KOReader's dispatcher as:
@@ -216,22 +209,10 @@ Access settings from: **OPDS Plus Catalog → Settings**
   - These can be assigned in KOReader's gesture/action configuration.
 - **Catalog Sync Controls**:
   - Per-catalog sync and force-sync via catalog long-press actions.
-  - One-way mirror mode can remove stale local files that no longer exist on server.
-  - Stale file deletion is always confirmed before removal.
+  - One-way (mirror) mode (1.2.1 t4rra fork) can remove stale local files that no longer exist on server.
   - Sync folder selection.
   - Maximum sync download count.
   - Filetype filtering for sync downloads.
-
-### Download Metadata Sidecars
-
-- Every successful download now writes a sidecar file beside the book:
-  - Example: `My Book.epub.opds.json`
-- Sidecar metadata includes:
-  - Title
-  - Authors
-  - Series and series index (when provided by catalog)
-  - Summary/description
-- Sidecars are additive and do not modify the downloaded EPUB/PDF file itself.
 
 ### Book Info Dialog (New in 1.2.0)
 

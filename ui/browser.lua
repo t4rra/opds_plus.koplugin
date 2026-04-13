@@ -318,7 +318,7 @@ function OPDSBrowser:onMenuHold(item)
         buttons = {
             {
                 {
-                    text = _("Force sync (overwrite existing)"),
+                    text = _("Force sync"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
@@ -327,7 +327,7 @@ function OPDSBrowser:onMenuHold(item)
                         end)
                     end
                 }, {
-                    text = _("Sync (one-way mirror)"),
+                    text = _("Sync"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
