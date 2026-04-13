@@ -23,12 +23,12 @@ local SettingsDialogs = require("ui.dialogs.settings_dialogs")
 -- Import state manager
 local StateManager = require("core.state_manager")
 
-local OPDS = WidgetContainer:extend {
+local OPDS = WidgetContainer:extend{
     name = "opdsplus",
     opds_settings_file = DataStorage:getSettingsDir() .. "/opdsplus.lua",
     settings = nil,
     servers = nil,
-    downloads = nil,
+    downloads = nil
 }
 
 function OPDS:init()
@@ -48,16 +48,29 @@ function OPDS:init()
     StateManager.getInstance(self)
 
     -- Load servers, downloads, and pending syncs
-    self.servers = self.opds_settings:readSetting("servers", Constants.DEFAULT_SERVERS)
+    self.servers = self.opds_settings:readSetting("servers",
+                                                  Constants.DEFAULT_SERVERS)
     self.downloads = self.opds_settings:readSetting("downloads", {})
     self.pending_syncs = self.opds_settings:readSetting("pending_syncs", {})
+
+    for _, server in ipairs(self.servers) do
+        if server.sync and not server.sync_mode then
+            server.sync_mode = Constants.SYNC.MODE_ONE_WAY_MIRROR
+            self.updated = true
+        end
+        if server.synced_files ~= nil and type(server.synced_files) ~= "table" then
+            server.synced_files = nil
+            self.updated = true
+        end
+    end
 
     self:onDispatcherRegisterActions()
     self.ui.menu:registerToMainMenu(self)
 end
 
 function OPDS:getCoverHeightRatio()
-    return self.settings.cover_height_ratio or Constants.DEFAULT_COVER_HEIGHT_RATIO
+    return self.settings.cover_height_ratio or
+               Constants.DEFAULT_COVER_HEIGHT_RATIO
 end
 
 function OPDS:setCoverHeightRatio(ratio, preset_name)
@@ -78,9 +91,7 @@ function OPDS:saveSetting(key, value)
 end
 
 function OPDS:getSetting(key)
-    if self.settings[key] ~= nil then
-        return self.settings[key]
-    end
+    if self.settings[key] ~= nil then return self.settings[key] end
     return Constants.DEFAULT_FONT_SETTINGS[key]
 end
 
@@ -88,12 +99,13 @@ function OPDS:getAvailableFonts()
     local fonts = {}
 
     -- Add KOReader's built-in UI fonts first
-    table.insert(fonts, { name = "Default UI (Noto Sans)", value = "smallinfofont" })
-    table.insert(fonts, { name = "Alternative UI", value = "infofont" })
+    table.insert(fonts,
+                 {name = "Default UI (Noto Sans)", value = "smallinfofont"})
+    table.insert(fonts, {name = "Alternative UI", value = "infofont"})
 
     -- Scan font directories for available fonts
     local font_dirs = {
-        "./fonts", -- KOReader's font directory
+        "./fonts" -- KOReader's font directory
     }
 
     -- Add user's font directory if it exists
@@ -102,11 +114,7 @@ function OPDS:getAvailableFonts()
         table.insert(font_dirs, user_font_dir)
     end
 
-    local font_extensions = {
-        [".ttf"] = true,
-        [".otf"] = true,
-        [".ttc"] = true,
-    }
+    local font_extensions = {[".ttf"] = true, [".otf"] = true, [".ttc"] = true}
 
     -- Scan directories for font files
     local seen_fonts = {}
@@ -126,10 +134,11 @@ function OPDS:getAvailableFonts()
                                 local font_name = entry:match("^(.+)%.")
                                 if font_name and not seen_fonts[font_name] then
                                     seen_fonts[font_name] = true
-                                    local display_name = font_name:gsub("%-", " "):gsub("_", " ")
+                                    local display_name =
+                                        font_name:gsub("%-", " "):gsub("_", " ")
                                     table.insert(fonts, {
                                         name = display_name,
-                                        value = font_name,
+                                        value = font_name
                                     })
                                 end
                             end
@@ -145,13 +154,17 @@ function OPDS:getAvailableFonts()
                                     if ext then
                                         ext = "." .. ext:lower()
                                         if font_extensions[ext] then
-                                            local font_name = subentry:match("^(.+)%.")
-                                            if font_name and not seen_fonts[font_name] then
+                                            local font_name = subentry:match(
+                                                                  "^(.+)%.")
+                                            if font_name and
+                                                not seen_fonts[font_name] then
                                                 seen_fonts[font_name] = true
-                                                local display_name = font_name:gsub("%-", " "):gsub("_", " ")
+                                                local display_name =
+                                                    font_name:gsub("%-", " ")
+                                                        :gsub("_", " ")
                                                 table.insert(fonts, {
                                                     name = display_name,
-                                                    value = font_name,
+                                                    value = font_name
                                                 })
                                             end
                                         end
@@ -172,21 +185,30 @@ function OPDS:getAvailableFonts()
 end
 
 function OPDS:onDispatcherRegisterActions()
-    Dispatcher:registerAction("opdsplus_show_catalog",
-        { category = "none", event = "ShowOPDSPlusCatalog", title = _("OPDS Plus Catalog"), filemanager = true, }
-    )
+    Dispatcher:registerAction("opdsplus_show_catalog", {
+        category = "none",
+        event = "ShowOPDSPlusCatalog",
+        title = _("OPDS Plus Catalog"),
+        filemanager = true
+    })
 
-    Dispatcher:registerAction("opdsplus_sync_all",
-        { category = "none", event = "StartOPDSSyncAllCatalogs", title = _("OPDS Plus: Sync all catalogs"), filemanager = true, }
-    )
+    Dispatcher:registerAction("opdsplus_sync_all", {
+        category = "none",
+        event = "StartOPDSSyncAllCatalogs",
+        title = _("OPDS Plus: Sync all catalogs (one-way mirror)"),
+        filemanager = true
+    })
 
-    Dispatcher:registerAction("opdsplus_force_sync_all",
-        { category = "none", event = "StartOPDSForceSyncAllCatalogs", title = _("OPDS Plus: Force sync all catalogs"), filemanager = true, }
-    )
+    Dispatcher:registerAction("opdsplus_force_sync_all", {
+        category = "none",
+        event = "StartOPDSForceSyncAllCatalogs",
+        title = _("OPDS Plus: Force sync all catalogs (overwrite existing)"),
+        filemanager = true
+    })
 end
 
 function OPDS:_createBrowserInstance()
-    return OPDSBrowser:new {
+    return OPDSBrowser:new{
         servers = self.servers,
         downloads = self.downloads,
         settings = self.settings,
@@ -208,12 +230,14 @@ function OPDS:_createBrowserInstance()
             self.opds_browser = nil
             if self.last_downloaded_file then
                 if self.ui.file_chooser then
-                    local pathname = util.splitFilePathName(self.last_downloaded_file)
-                    self.ui.file_chooser:changeToPath(pathname, self.last_downloaded_file)
+                    local pathname = util.splitFilePathName(
+                                         self.last_downloaded_file)
+                    self.ui.file_chooser:changeToPath(pathname,
+                                                      self.last_downloaded_file)
                 end
                 self.last_downloaded_file = nil
             end
-        end,
+        end
     }
 end
 
@@ -227,9 +251,7 @@ function OPDS:_startSyncFromDispatcher(force_sync)
     self.opds_browser:checkSyncDownload()
 end
 
-function OPDS:onStartOPDSSyncAllCatalogs()
-    self:_startSyncFromDispatcher(false)
-end
+function OPDS:onStartOPDSSyncAllCatalogs() self:_startSyncFromDispatcher(false) end
 
 function OPDS:onStartOPDSForceSyncAllCatalogs()
     self:_startSyncFromDispatcher(true)
@@ -244,33 +266,25 @@ function OPDS:addToMainMenu(menu_items)
     end
 end
 
-function OPDS:showCoverSizeMenu()
-    SettingsDialogs.showCoverSizeMenu(self)
-end
+function OPDS:showCoverSizeMenu() SettingsDialogs.showCoverSizeMenu(self) end
 
-function OPDS:showCustomSizeDialog()
-    SettingsDialogs.showCustomSizeDialog(self)
-end
+function OPDS:showCustomSizeDialog() SettingsDialogs.showCustomSizeDialog(self) end
 
 function OPDS:showFontSelectionMenu(setting_key, title)
     SettingsDialogs.showFontSelectionMenu(self, setting_key, title)
 end
 
-function OPDS:showSizeSelectionMenu(setting_key, title, min_size, max_size, default_size)
-    SettingsDialogs.showSizeSelectionMenu(self, setting_key, title, min_size, max_size, default_size)
+function OPDS:showSizeSelectionMenu(setting_key, title, min_size, max_size,
+                                    default_size)
+    SettingsDialogs.showSizeSelectionMenu(self, setting_key, title, min_size,
+                                          max_size, default_size)
 end
 
-function OPDS:showGridLayoutMenu()
-    SettingsDialogs.showGridLayoutMenu(self)
-end
+function OPDS:showGridLayoutMenu() SettingsDialogs.showGridLayoutMenu(self) end
 
-function OPDS:showGridColumnsMenu()
-    SettingsDialogs.showGridColumnsMenu(self)
-end
+function OPDS:showGridColumnsMenu() SettingsDialogs.showGridColumnsMenu(self) end
 
-function OPDS:showGridBorderMenu()
-    SettingsDialogs.showGridBorderMenu(self)
-end
+function OPDS:showGridBorderMenu() SettingsDialogs.showGridBorderMenu(self) end
 
 function OPDS:showGridBorderSizeMenu()
     SettingsDialogs.showGridBorderSizeMenu(self)
@@ -288,9 +302,7 @@ function OPDS:showCoverCacheTTLDialog()
     SettingsDialogs.showCoverCacheTTLDialog(self)
 end
 
-function OPDS:clearCoverCache()
-    SettingsDialogs.clearCoverCache()
-end
+function OPDS:clearCoverCache() SettingsDialogs.clearCoverCache() end
 
 function OPDS:onShowOPDSPlusCatalog()
     self.opds_browser = self:_createBrowserInstance()
@@ -299,8 +311,10 @@ end
 
 function OPDS:showFileDownloadedDialog(file)
     self.last_downloaded_file = file
-    UIManager:show(ConfirmBox:new {
-        text = T(_("File saved to:\n%1\nWould you like to read the downloaded book now?"), BD.filepath(file)),
+    UIManager:show(ConfirmBox:new{
+        text = T(_(
+                     "File saved to:\n%1\nWould you like to read the downloaded book now?"),
+                 BD.filepath(file)),
         ok_text = _("Read now"),
         ok_callback = function()
             self.last_downloaded_file = nil
@@ -310,7 +324,7 @@ function OPDS:showFileDownloadedDialog(file)
             else
                 self.ui:openFile(file)
             end
-        end,
+        end
     })
 end
 

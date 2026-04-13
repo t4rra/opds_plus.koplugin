@@ -1,7 +1,7 @@
 -- Catalog Manager for OPDS Browser
 -- Handles catalog configuration, CRUD operations, and sync settings
-
 local CatalogUtils = require("utils.catalog_utils")
+local Constants = require("models.constants")
 
 local CatalogManager = {}
 
@@ -11,16 +11,11 @@ local CatalogManager = {}
 -- @param _ function Gettext translation function
 -- @return table Item table for root menu
 function CatalogManager.genItemTableFromRoot(servers, downloads, _)
-	local item_table = {
-		{
-			text = _("Downloads"),
-			mandatory = #downloads,
-		},
-	}
-	for _, server in ipairs(servers) do
-		table.insert(item_table, CatalogUtils.buildRootEntry(server))
-	end
-	return item_table
+    local item_table = {{text = _("Downloads"), mandatory = #downloads}}
+    for _, server in ipairs(servers) do
+        table.insert(item_table, CatalogUtils.buildRootEntry(server))
+    end
+    return item_table
 end
 
 -- Add or update a catalog from input fields
@@ -30,33 +25,36 @@ end
 -- @param item table|nil Existing item to update (nil for new)
 -- @param no_refresh boolean Don't refresh item table if true
 -- @return number, number New index, item number for refresh
-function CatalogManager.editCatalogFromInput(servers, item_table, fields, item, no_refresh)
-	local new_server = {
-		title     = fields[1],
-		url       = fields[2]:match("^%a+://") and fields[2] or "http://" .. fields[2],
-		username  = fields[3] ~= "" and fields[3] or nil,
-		password  = fields[4] ~= "" and fields[4] or nil,
-		raw_names = fields[5],
-		sync      = fields[6],
-	}
+function CatalogManager.editCatalogFromInput(servers, item_table, fields, item,
+                                             no_refresh)
+    local new_server = {
+        title = fields[1],
+        url = fields[2]:match("^%a+://") and fields[2] or "http://" .. fields[2],
+        username = fields[3] ~= "" and fields[3] or nil,
+        password = fields[4] ~= "" and fields[4] or nil,
+        raw_names = fields[5],
+        sync = fields[6],
+        sync_mode = fields[6] and
+            (fields[7] or Constants.SYNC.MODE_ONE_WAY_MIRROR) or nil
+    }
 
-	local new_item = CatalogUtils.buildRootEntry(new_server)
-	local new_idx, itemnumber
+    local new_item = CatalogUtils.buildRootEntry(new_server)
+    local new_idx, itemnumber
 
-	if item then
-		-- Editing existing catalog
-		new_idx = item.idx
-		itemnumber = -1
-	else
-		-- Adding new catalog
-		new_idx = #servers + 2 -- +1 for 0-based, +1 for "Downloads" entry
-		itemnumber = new_idx
-	end
+    if item then
+        -- Editing existing catalog
+        new_idx = item.idx
+        itemnumber = -1
+    else
+        -- Adding new catalog
+        new_idx = #servers + 2 -- +1 for 0-based, +1 for "Downloads" entry
+        itemnumber = new_idx
+    end
 
-	servers[new_idx - 1] = new_server
-	item_table[new_idx] = new_item
+    servers[new_idx - 1] = new_server
+    item_table[new_idx] = new_item
 
-	return new_idx, itemnumber, (not no_refresh)
+    return new_idx, itemnumber, (not no_refresh)
 end
 
 -- Delete a catalog from the list
@@ -65,9 +63,9 @@ end
 -- @param item table Item to delete
 -- @return table Updated item table
 function CatalogManager.deleteCatalog(servers, item_table, item)
-	table.remove(servers, item.idx - 1)
-	table.remove(item_table, item.idx)
-	return item_table
+    table.remove(servers, item.idx - 1)
+    table.remove(item_table, item.idx)
+    return item_table
 end
 
 -- Update a field in a catalog configuration
@@ -75,7 +73,7 @@ end
 -- @param field_name string Field name to update
 -- @param value any New value for the field
 function CatalogManager.updateCatalogField(catalog, field_name, value)
-	catalog[field_name] = value
+    catalog[field_name] = value
 end
 
 -- Find catalog by URL
@@ -83,12 +81,10 @@ end
 -- @param catalog_url string URL to search for
 -- @return table|nil, number|nil Catalog object and index, or nil if not found
 function CatalogManager.findCatalogByUrl(servers, catalog_url)
-	for idx, server in ipairs(servers) do
-		if server.url == catalog_url then
-			return server, idx
-		end
-	end
-	return nil, nil
+    for idx, server in ipairs(servers) do
+        if server.url == catalog_url then return server, idx end
+    end
+    return nil, nil
 end
 
 -- Find catalog by title
@@ -96,93 +92,87 @@ end
 -- @param title string Title to search for
 -- @return table|nil, number|nil Catalog object and index, or nil if not found
 function CatalogManager.findCatalogByTitle(servers, title)
-	for idx, server in ipairs(servers) do
-		if server.title == title then
-			return server, idx
-		end
-	end
-	return nil, nil
+    for idx, server in ipairs(servers) do
+        if server.title == title then return server, idx end
+    end
+    return nil, nil
 end
 
 -- Validate catalog URL
 -- @param catalog_url string URL to validate
 -- @return boolean, string|nil True if valid, false + error message if invalid
 function CatalogManager.validateCatalogUrl(catalog_url)
-	if not catalog_url or catalog_url == "" then
-		return false, "URL cannot be empty"
-	end
+    if not catalog_url or catalog_url == "" then
+        return false, "URL cannot be empty"
+    end
 
-	-- Add protocol if missing
-	if not catalog_url:match("^%a+://") then
-		catalog_url = "http://" .. catalog_url
-	end
+    -- Add protocol if missing
+    if not catalog_url:match("^%a+://") then
+        catalog_url = "http://" .. catalog_url
+    end
 
-	-- Basic URL validation
-	local url = require("socket.url")
-	local parsed = url.parse(catalog_url)
+    -- Basic URL validation
+    local url = require("socket.url")
+    local parsed = url.parse(catalog_url)
 
-	if not parsed then
-		return false, "Invalid URL format"
-	end
+    if not parsed then return false, "Invalid URL format" end
 
-	if not parsed.scheme then
-		return false, "Missing protocol (http:// or https://)"
-	end
+    if not parsed.scheme then
+        return false, "Missing protocol (http:// or https://)"
+    end
 
-	if parsed.scheme ~= "http" and parsed.scheme ~= "https" then
-		return false, "Only HTTP and HTTPS protocols are supported"
-	end
+    if parsed.scheme ~= "http" and parsed.scheme ~= "https" then
+        return false, "Only HTTP and HTTPS protocols are supported"
+    end
 
-	if not parsed.host or parsed.host == "" then
-		return false, "Missing hostname"
-	end
+    if not parsed.host or parsed.host == "" then
+        return false, "Missing hostname"
+    end
 
-	-- Validate hostname format (basic check for valid characters)
-	if not parsed.host:match("^[%w%.%-]+$") then
-		return false, "Invalid hostname format"
-	end
+    -- Validate hostname format (basic check for valid characters)
+    if not parsed.host:match("^[%w%.%-]+$") then
+        return false, "Invalid hostname format"
+    end
 
-	-- Check for at least one dot in hostname (unless it's localhost)
-	if parsed.host ~= "localhost" and not parsed.host:match("%.") then
-		return false, "Invalid hostname: must be a domain name or IP address"
-	end
+    -- Check for at least one dot in hostname (unless it's localhost)
+    if parsed.host ~= "localhost" and not parsed.host:match("%.") then
+        return false, "Invalid hostname: must be a domain name or IP address"
+    end
 
-	-- Validate that it's not just random characters
-	-- Should have a valid TLD or be an IP address
-	local is_ip = parsed.host:match("^%d+%.%d+%.%d+%.%d+$")
-	local has_valid_tld = parsed.host:match("%.%a%a+$") or parsed.host:match("%.%a%a%a+$")
+    -- Validate that it's not just random characters
+    -- Should have a valid TLD or be an IP address
+    local is_ip = parsed.host:match("^%d+%.%d+%.%d+%.%d+$")
+    local has_valid_tld = parsed.host:match("%.%a%a+$") or
+                              parsed.host:match("%.%a%a%a+$")
 
-	if not is_ip and not has_valid_tld and parsed.host ~= "localhost" then
-		return false, "Invalid domain: '" .. parsed.host .. "' doesn't appear to be a valid hostname"
-	end
+    if not is_ip and not has_valid_tld and parsed.host ~= "localhost" then
+        return false, "Invalid domain: '" .. parsed.host ..
+                   "' doesn't appear to be a valid hostname"
+    end
 
-	return true, catalog_url
+    return true, catalog_url
 end
 
 -- Get list of catalogs with sync enabled
 -- @param servers table List of server configurations
 -- @return table List of sync-enabled catalogs
 function CatalogManager.getSyncEnabledCatalogs(servers)
-	local sync_catalogs = {}
-	for _, server in ipairs(servers) do
-		if server.sync then
-			table.insert(sync_catalogs, server)
-		end
-	end
-	return sync_catalogs
+    local sync_catalogs = {}
+    for _, server in ipairs(servers) do
+        if server.sync then table.insert(sync_catalogs, server) end
+    end
+    return sync_catalogs
 end
 
 -- Get list of catalogs with authentication
 -- @param servers table List of server configurations
 -- @return table List of catalogs requiring authentication
 function CatalogManager.getAuthenticatedCatalogs(servers)
-	local auth_catalogs = {}
-	for _, server in ipairs(servers) do
-		if server.username then
-			table.insert(auth_catalogs, server)
-		end
-	end
-	return auth_catalogs
+    local auth_catalogs = {}
+    for _, server in ipairs(servers) do
+        if server.username then table.insert(auth_catalogs, server) end
+    end
+    return auth_catalogs
 end
 
 -- Export catalogs to a table (for saving/sharing)
@@ -190,23 +180,24 @@ end
 -- @param include_credentials boolean Include username/password in export
 -- @return table Exportable catalog list
 function CatalogManager.exportCatalogs(servers, include_credentials)
-	local export = {}
-	for _, server in ipairs(servers) do
-		local catalog = {
-			title = server.title,
-			url = server.url,
-			raw_names = server.raw_names,
-			sync = server.sync,
-		}
+    local export = {}
+    for _, server in ipairs(servers) do
+        local catalog = {
+            title = server.title,
+            url = server.url,
+            raw_names = server.raw_names,
+            sync = server.sync,
+            sync_mode = server.sync_mode
+        }
 
-		if include_credentials then
-			catalog.username = server.username
-			catalog.password = server.password
-		end
+        if include_credentials then
+            catalog.username = server.username
+            catalog.password = server.password
+        end
 
-		table.insert(export, catalog)
-	end
-	return export
+        table.insert(export, catalog)
+    end
+    return export
 end
 
 -- Import catalogs from a table
@@ -215,68 +206,67 @@ end
 -- @param merge_duplicates boolean If true, skip duplicates; if false, import all
 -- @return number, number Number imported, number skipped
 function CatalogManager.importCatalogs(servers, import_data, merge_duplicates)
-	local imported = 0
-	local skipped = 0
+    local imported = 0
+    local skipped = 0
 
-	for _, catalog in ipairs(import_data) do
-		-- Validate required fields
-		if catalog.title and catalog.url then
-			local exists = false
+    for _, catalog in ipairs(import_data) do
+        -- Validate required fields
+        if catalog.title and catalog.url then
+            local exists = false
 
-			if merge_duplicates then
-				-- Check for duplicates by URL
-				for _, existing in ipairs(servers) do
-					if existing.url == catalog.url then
-						exists = true
-						skipped = skipped + 1
-						break
-					end
-				end
-			end
+            if merge_duplicates then
+                -- Check for duplicates by URL
+                for _, existing in ipairs(servers) do
+                    if existing.url == catalog.url then
+                        exists = true
+                        skipped = skipped + 1
+                        break
+                    end
+                end
+            end
 
-			if not exists then
-				table.insert(servers, {
-					title = catalog.title,
-					url = catalog.url,
-					username = catalog.username,
-					password = catalog.password,
-					raw_names = catalog.raw_names,
-					sync = catalog.sync,
-				})
-				imported = imported + 1
-			end
-		else
-			skipped = skipped + 1
-		end
-	end
+            if not exists then
+                table.insert(servers, {
+                    title = catalog.title,
+                    url = catalog.url,
+                    username = catalog.username,
+                    password = catalog.password,
+                    raw_names = catalog.raw_names,
+                    sync = catalog.sync,
+                    sync_mode = catalog.sync and
+                        (catalog.sync_mode or Constants.SYNC.MODE_ONE_WAY_MIRROR) or
+                        nil
+                })
+                imported = imported + 1
+            end
+        else
+            skipped = skipped + 1
+        end
+    end
 
-	return imported, skipped
+    return imported, skipped
 end
 
 -- Get catalog statistics
 -- @param servers table List of server configurations
 -- @return table Statistics: total, with_auth, with_sync, searchable
 function CatalogManager.getCatalogStats(servers)
-	local stats = {
-		total = #servers,
-		with_auth = 0,
-		with_sync = 0,
-		searchable = 0,
-	}
+    local stats = {
+        total = #servers,
+        with_auth = 0,
+        with_sync = 0,
+        searchable = 0
+    }
 
-	for _, server in ipairs(servers) do
-		if server.username then
-			stats.with_auth = stats.with_auth + 1
-		end
-		if server.sync then
-			stats.with_sync = stats.with_sync + 1
-		end
-		if server.url and server.url:match("%%s") then
-			stats.searchable = stats.searchable + 1
-		end
-	end
+    for _, server in ipairs(servers) do
+        if server.username then stats.with_auth = stats.with_auth + 1 end
+        if server.sync then stats.with_sync = stats.with_sync + 1 end
+        if server.url and server.url:match("%%s") then
+            stats.searchable = stats.searchable + 1
+        end
+    end
 
-	return stats
+    return stats
 end
 
 -- Sort catalogs by specified field
@@ -285,35 +275,33 @@ end
 -- @param ascending boolean Sort direction
 -- @return table Sorted server list
 function CatalogManager.sortCatalogs(servers, sort_by, ascending)
-	local sorted = {}
-	for _, server in ipairs(servers) do
-		table.insert(sorted, server)
-	end
+    local sorted = {}
+    for _, server in ipairs(servers) do table.insert(sorted, server) end
 
-	table.sort(sorted, function(a, b)
-		local val_a, val_b
+    table.sort(sorted, function(a, b)
+        local val_a, val_b
 
-		if sort_by == "title" then
-			val_a = a.title or ""
-			val_b = b.title or ""
-		elseif sort_by == "url" then
-			val_a = a.url or ""
-			val_b = b.url or ""
-		elseif sort_by == "sync" then
-			val_a = a.sync and 1 or 0
-			val_b = b.sync and 1 or 0
-		else
-			return false
-		end
+        if sort_by == "title" then
+            val_a = a.title or ""
+            val_b = b.title or ""
+        elseif sort_by == "url" then
+            val_a = a.url or ""
+            val_b = b.url or ""
+        elseif sort_by == "sync" then
+            val_a = a.sync and 1 or 0
+            val_b = b.sync and 1 or 0
+        else
+            return false
+        end
 
-		if ascending then
-			return val_a < val_b
-		else
-			return val_a > val_b
-		end
-	end)
+        if ascending then
+            return val_a < val_b
+        else
+            return val_a > val_b
+        end
+    end)
 
-	return sorted
+    return sorted
 end
 
 -- Duplicate catalog (create a copy)
@@ -321,16 +309,19 @@ end
 -- @param new_title string|nil Optional new title (defaults to "Copy of {title}")
 -- @return table New catalog configuration
 function CatalogManager.duplicateCatalog(server, new_title)
-	local _ = require("gettext")
-	return {
-		title = new_title or _("Copy of ") .. server.title,
-		url = server.url,
-		username = server.username,
-		password = server.password,
-		raw_names = server.raw_names,
-		sync = server.sync,
-		last_download = nil, -- Don't copy sync state
-	}
+    local _ = require("gettext")
+    return {
+        title = new_title or _("Copy of ") .. server.title,
+        url = server.url,
+        username = server.username,
+        password = server.password,
+        raw_names = server.raw_names,
+        sync = server.sync,
+        sync_mode = server.sync and
+            (server.sync_mode or Constants.SYNC.MODE_ONE_WAY_MIRROR) or nil,
+        last_download = nil, -- Don't copy sync state
+        synced_files = nil -- Don't copy previous remote manifest
+    }
 end
 
 return CatalogManager

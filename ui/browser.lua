@@ -49,41 +49,37 @@ local StateManager = require("core.state_manager")
 local Debug = require("utils.debug")
 
 -- Changed from Menu:extend to OPDSCoverMenu:extend to support cover images
-local OPDSBrowser = OPDSCoverMenu:extend {
-    catalog_type             = Constants.CATALOG_TYPE,
-    search_type              = Constants.SEARCH_TYPE,
-    search_template_type     = Constants.SEARCH_TEMPLATE_TYPE,
-    acquisition_rel          = Constants.ACQUISITION_REL,
-    borrow_rel               = Constants.BORROW_REL,
-    stream_rel               = Constants.STREAM_REL,
-    facet_rel                = Constants.FACET_REL,
-    image_rel                = Constants.IMAGE_REL,
-    thumbnail_rel            = Constants.THUMBNAIL_REL,
+local OPDSBrowser = OPDSCoverMenu:extend{
+    catalog_type = Constants.CATALOG_TYPE,
+    search_type = Constants.SEARCH_TYPE,
+    search_template_type = Constants.SEARCH_TEMPLATE_TYPE,
+    acquisition_rel = Constants.ACQUISITION_REL,
+    borrow_rel = Constants.BORROW_REL,
+    stream_rel = Constants.STREAM_REL,
+    facet_rel = Constants.FACET_REL,
+    image_rel = Constants.IMAGE_REL,
+    thumbnail_rel = Constants.THUMBNAIL_REL,
 
-    root_catalog_title       = nil,
-    root_catalog_username    = nil,
-    root_catalog_password    = nil,
-    facet_groups             = nil,
+    root_catalog_title = nil,
+    root_catalog_username = nil,
+    root_catalog_password = nil,
+    facet_groups = nil,
 
-    title_shrink_font_to_fit = true,
+    title_shrink_font_to_fit = true
 }
 
 function OPDSBrowser:init()
     self.item_table = self:genItemTableFromRoot()
     self.catalog_title = nil
     self.title_bar_left_icon = Constants.ICONS.MENU
-    self.onLeftButtonTap = function()
-        self:showOPDSMenu()
-    end
+    self.onLeftButtonTap = function() self:showOPDSMenu() end
 
     self.title_bar_right_icon = nil
     self.facet_groups = nil
     OPDSCoverMenu.init(self)
 end
 
-function OPDSBrowser:_debugLog(...)
-    Debug.log("Browser:", ...)
-end
+function OPDSBrowser:_debugLog(...) Debug.log("Browser:", ...) end
 
 function OPDSBrowser:toggleViewMode()
     -- Get current mode using StateManager
@@ -100,9 +96,9 @@ function OPDSBrowser:toggleViewMode()
 
     -- Show notification
     local mode_text = new_mode == "grid" and _("Grid View") or _("List View")
-    UIManager:show(InfoMessage:new {
+    UIManager:show(InfoMessage:new{
         text = T(_("Switched to %1"), mode_text),
-        timeout = 1,
+        timeout = 1
     })
 
     -- Refresh the current view WITHOUT breaking navigation or auth context
@@ -138,7 +134,8 @@ function OPDSBrowser:showCatalogMenu()
     local catalog_url = self.paths[#self.paths].url
     local has_covers = OPDSMenuBuilder.hasCovers(self.item_table)
 
-    local dialog = OPDSMenuBuilder.buildCatalogMenu(self, catalog_url, has_covers)
+    local dialog = OPDSMenuBuilder.buildCatalogMenu(self, catalog_url,
+                                                    has_covers)
     UIManager:show(dialog)
 end
 
@@ -160,8 +157,9 @@ end
 
 function OPDSBrowser:editCatalogFromInput(fields, item, no_refresh)
     -- luacheck: ignore new_idx
-    local new_idx, itemnumber, should_refresh = CatalogManager.editCatalogFromInput(
-        self.servers, self.item_table, fields, item, no_refresh)
+    local new_idx, itemnumber, should_refresh =
+        CatalogManager.editCatalogFromInput(self.servers, self.item_table,
+                                            fields, item, no_refresh)
 
     if should_refresh then
         self:switchItemTable(nil, self.item_table, itemnumber)
@@ -170,48 +168,54 @@ function OPDSBrowser:editCatalogFromInput(fields, item, no_refresh)
 end
 
 function OPDSBrowser:deleteCatalog(item)
-    self.item_table = CatalogManager.deleteCatalog(self.servers, self.item_table, item)
+    self.item_table = CatalogManager.deleteCatalog(self.servers,
+                                                   self.item_table, item)
     self:switchItemTable(nil, self.item_table, -1)
     StateManager.getInstance():markDirty()
 end
 
 function OPDSBrowser:fetchFeed(item_url, headers_only)
     return FeedFetcher.fetchFeed(item_url, headers_only,
-        self.root_catalog_username, self.root_catalog_password)
+                                 self.root_catalog_username,
+                                 self.root_catalog_password)
 end
 
 function OPDSBrowser:parseFeed(item_url)
-    return FeedFetcher.parseFeed(item_url,
-        self.root_catalog_username, self.root_catalog_password,
-        function(...) self:_debugLog(...) end)
+    return FeedFetcher.parseFeed(item_url, self.root_catalog_username,
+                                 self.root_catalog_password,
+                                 function(...) self:_debugLog(...) end)
 end
 
 function OPDSBrowser:getServerFileName(item_url, filetype)
     return FeedFetcher.getServerFileName(item_url, filetype,
-        self.root_catalog_username, self.root_catalog_password)
+                                         self.root_catalog_username,
+                                         self.root_catalog_password)
 end
 
 function OPDSBrowser:getSearchTemplate(osd_url)
     return FeedFetcher.getSearchTemplate(osd_url, self.search_template_type,
-        self.root_catalog_username, self.root_catalog_password,
-        function(...) self:_debugLog(...) end)
+                                         self.root_catalog_username,
+                                         self.root_catalog_password,
+                                         function(...) self:_debugLog(...) end)
 end
 
 function OPDSBrowser:genItemTableFromURL(item_url)
-    return FeedFetcher.genItemTableFromURL(item_url,
-        self.root_catalog_username, self.root_catalog_password,
-        function(...) self:_debugLog(...) end,
-        function(catalog, catalog_url)
-            return self:genItemTableFromCatalog(catalog, catalog_url)
-        end)
+    return FeedFetcher.genItemTableFromURL(item_url, self.root_catalog_username,
+                                           self.root_catalog_password,
+                                           function(...) self:_debugLog(...) end,
+                                           function(catalog, catalog_url)
+        return self:genItemTableFromCatalog(catalog, catalog_url)
+    end)
 end
 
 function OPDSBrowser:genItemTableFromCatalog(catalog, item_url)
     local context = BrowserContext.fromBrowser(self)
 
-    local item_table, facet_groups, search_url = NavigationHandler.genItemTableFromCatalog(
-        catalog, item_url, context,
-        function(...) self:_debugLog(...) end)
+    local item_table, facet_groups, search_url =
+        NavigationHandler.genItemTableFromCatalog(catalog, item_url, context,
+                                                  function(...)
+            self:_debugLog(...)
+        end)
 
     self.facet_groups = facet_groups
     self.search_url = search_url
@@ -239,11 +243,14 @@ function OPDSBrowser:showDownloads(item)
     local filename, filename_orig = self:getFileName(item)
 
     local function createTitle(path, file)
-        return T(_("Download folder:\n%1\n\nDownload filename:\n%2\n\nDownload file type:"),
-            BD.dirpath(path), file or _(Constants.DEFAULT_FILENAME))
+        return T(_(
+                     "Download folder:\n%1\n\nDownload filename:\n%2\n\nDownload file type:"),
+                 BD.dirpath(path), file or _(Constants.DEFAULT_FILENAME))
     end
 
-    self.download_dialog = DownloadDialogBuilder.buildDownloadDialog(self, item, filename, createTitle)
+    self.download_dialog = DownloadDialogBuilder.buildDownloadDialog(self, item,
+                                                                     filename,
+                                                                     createTitle)
     UIManager:show(self.download_dialog)
 end
 
@@ -253,7 +260,8 @@ function OPDSBrowser:getCurrentDownloadDir()
 end
 
 function OPDSBrowser:getLocalDownloadPath(filename, filetype, remote_url)
-    return DownloadManager.getLocalDownloadPath(self, filename, filetype, remote_url)
+    return DownloadManager.getLocalDownloadPath(self, filename, filetype,
+                                                remote_url)
 end
 
 -- Menu action on item tap (Download a book / Show subcatalog / Search in catalog)
@@ -270,7 +278,7 @@ function OPDSBrowser:onMenuSelect(item)
         -- Show book info dialog first, allowing user to see details before downloading
         local book_info_dialog = BookInfoDialog.build(self, item)
         UIManager:show(book_info_dialog)
-    else                         -- catalog or Search item
+    else -- catalog or Search item
         if #self.paths == 0 then -- root list
             if item.idx == 1 then
                 if #self.downloads > 0 then
@@ -278,9 +286,9 @@ function OPDSBrowser:onMenuSelect(item)
                 end
                 return true
             end
-            self.root_catalog_title     = item.text
-            self.root_catalog_username  = item.username
-            self.root_catalog_password  = item.password
+            self.root_catalog_title = item.text
+            self.root_catalog_username = item.username
+            self.root_catalog_password = item.password
             self.root_catalog_raw_names = item.raw_names
         end
         local connect_callback
@@ -289,7 +297,8 @@ function OPDSBrowser:onMenuSelect(item)
                 self:searchCatalog(item.url)
             end
         else
-            self.catalog_title = item.text or self.catalog_title or self.root_catalog_title
+            self.catalog_title = item.text or self.catalog_title or
+                                     self.root_catalog_title
             connect_callback = function()
                 self:updateCatalog(item.url)
             end
@@ -303,56 +312,52 @@ end
 function OPDSBrowser:onMenuHold(item)
     if #self.paths > 0 or item.idx == 1 then return true end -- not root list or Downloads item
     local dialog
-    dialog = ButtonDialog:new {
+    dialog = ButtonDialog:new{
         title = item.text,
         title_align = "center",
         buttons = {
             {
                 {
-                    text = _("Force sync"),
+                    text = _("Force sync (overwrite existing)"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
                             self.sync_force = true
                             self:checkSyncDownload(item.idx)
                         end)
-                    end,
-                },
-                {
-                    text = _("Sync"),
+                    end
+                }, {
+                    text = _("Sync (one-way mirror)"),
                     callback = function()
                         UIManager:close(dialog)
                         NetworkMgr:runWhenConnected(function()
                             self.sync_force = false
                             self:checkSyncDownload(item.idx)
                         end)
-                    end,
-                },
-            },
-            {},
-            {
+                    end
+                }
+            }, {}, {
                 {
                     text = _("Delete"),
                     callback = function()
-                        UIManager:show(ConfirmBox:new {
+                        UIManager:show(ConfirmBox:new{
                             text = _("Delete OPDS catalog?"),
                             ok_text = _("Delete"),
                             ok_callback = function()
                                 UIManager:close(dialog)
                                 self:deleteCatalog(item)
-                            end,
+                            end
                         })
-                    end,
-                },
-                {
+                    end
+                }, {
                     text = _("Edit"),
                     callback = function()
                         UIManager:close(dialog)
                         self:addEditCatalog(item)
-                    end,
-                },
-            },
-        },
+                    end
+                }
+            }
+        }
     }
     UIManager:show(dialog)
     return true
@@ -402,7 +407,7 @@ function OPDSBrowser:onNextPage(fill_only)
 end
 
 function OPDSBrowser:showDownloadList()
-    self.download_list = Menu:new {
+    self.download_list = Menu:new{
         covers_fullscreen = true,
         is_borderless = true,
         is_popout = false,
@@ -435,8 +440,8 @@ function OPDSBrowser:updateDownloadListItemTable(item_table)
         item_table = {}
         for i, item in ipairs(self.downloads) do
             item_table[i] = {
-                text      = item.file:gsub(".*/", ""),
-                mandatory = item.catalog,
+                text = item.file:gsub(".*/", ""),
+                mandatory = item.catalog
             }
         end
     end
@@ -463,29 +468,20 @@ function OPDSBrowser:downloadDownloadList()
     return DownloadManager.downloadDownloadList(self)
 end
 
-function OPDSBrowser:setMaxSyncDownload()
-    SyncManager.showMaxSyncDialog(self)
-end
+function OPDSBrowser:setMaxSyncDownload() SyncManager.showMaxSyncDialog(self) end
 
-function OPDSBrowser:setSyncDir()
-    SyncManager.showSyncDirChooser(self)
-end
+function OPDSBrowser:setSyncDir() SyncManager.showSyncDirChooser(self) end
 
-function OPDSBrowser:setSyncFiletypes()
-    SyncManager.showFiletypesDialog(self)
-end
+function OPDSBrowser:setSyncFiletypes() SyncManager.showFiletypesDialog(self) end
 
 -- Helper function to get filename and set nil if using raw names
 function OPDSBrowser:getFileName(item)
     local filename = item.title
-    if item.author then
-        filename = item.author .. " - " .. filename
-    end
+    if item.author then filename = item.author .. " - " .. filename end
     local filename_orig = filename
-    if self.root_catalog_raw_names then
-        filename = nil
-    end
-    return util.replaceAllInvalidChars(filename), util.replaceAllInvalidChars(filename_orig)
+    if self.root_catalog_raw_names then filename = nil end
+    return util.replaceAllInvalidChars(filename),
+           util.replaceAllInvalidChars(filename_orig)
 end
 
 function OPDSBrowser:updateFieldInCatalog(item, name, value)
