@@ -1,5 +1,5 @@
 -- OPDS metadata writer
--- Persists metadata using KOReader DocSettings custom metadata
+-- Persists metadata using KOReader custom metadata overrides only
 local logger = require("logger")
 local DocSettings = require("docsettings")
 
@@ -49,13 +49,10 @@ local function buildCustomMetadata(metadata)
         custom.description = custom.summary
     end
 
-    return custom
-end
+    -- KOReader surfaces description in book info; keep a single canonical field.
+    custom.summary = nil
 
-local function cloneTable(value)
-    local clone = {}
-    for key, item in pairs(value or {}) do clone[key] = item end
-    return clone
+    return custom
 end
 
 local function buildDisplayTitle(metadata, book_path)
@@ -63,6 +60,12 @@ local function buildDisplayTitle(metadata, book_path)
         return metadata.title
     end
     return (book_path:gsub(".*[/\\]", "")):gsub("%.[^.]+$", "")
+end
+
+local function cloneTable(value)
+    local clone = {}
+    for key, item in pairs(value or {}) do clone[key] = item end
+    return clone
 end
 
 function OPDSMetadata.writeMetadata(book_path, metadata)
@@ -76,17 +79,12 @@ function OPDSMetadata.writeMetadata(book_path, metadata)
                                                           book_path)
 
     local doc_settings = DocSettings:open(book_path)
-    local doc_props = cloneTable(doc_settings:readSetting("doc_props") or {})
-    local original_doc_props = cloneTable(doc_props)
+    local original_doc_props = cloneTable(
+                                   doc_settings:readSetting("doc_props") or {})
 
-    for key, value in pairs(normalized_metadata) do doc_props[key] = value end
-
-    doc_settings:saveSetting("doc_props", doc_props)
-    doc_settings:flush()
-
-    local custom_doc_settings = DocSettings.openSettingsFile(book_path)
+    local custom_doc_settings = DocSettings.openSettingsFile()
     if not custom_doc_settings then
-        return false, "could not open DocSettings"
+        return false, "could not open custom DocSettings"
     end
 
     custom_doc_settings:saveSetting("doc_props", original_doc_props)

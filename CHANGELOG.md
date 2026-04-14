@@ -4,13 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2026-04-13
+## [1.2.1] - 2026-04-14
 
 ### Added
 
 - **Mirror Sync for Synced Catalogs**:
   - New option for one-way (mirror) sync behavior, i.e. local files will be deleted if they no longer exist on the catalog
   - Added menu option to sync for quick access
+  - Download/sync progress indicator
 - **OPDS Metadata Sidecars**:
   - Successful downloads now write metadata sidecars for better integration with KOReader's library and file management features.
   - Sidecars include title, authors, series/index (when available), and summary metadata.

@@ -25,6 +25,18 @@ local OPDSMetadata = require("services.opds_metadata")
 
 local DownloadManager = {}
 
+local function getQueueProgressText(done, total)
+    return T(_("Downloading… %1/%2 (tap to cancel)"), done, total)
+end
+
+local function refreshQueueProgressDialog(info, done, total)
+    if info then UIManager:close(info) end
+    local next_info = InfoMessage:new{text = getQueueProgressText(done, total)}
+    UIManager:show(next_info)
+    UIManager:forceRePaint()
+    return next_info
+end
+
 local function normalizeAuthors(item)
     if type(item.authors) == "table" and #item.authors > 0 then
         return item.authors
@@ -233,23 +245,30 @@ end
 -- @param browser table OPDSBrowser instance
 -- @return number Count of successfully downloaded files
 function DownloadManager.downloadDownloadList(browser)
-    local info = InfoMessage:new{text = _("Downloading… (tap to cancel)")}
-    UIManager:show(info)
-    UIManager:forceRePaint()
+    local total = #browser.downloads
+    local info = refreshQueueProgressDialog(nil, 0, total)
 
-    local completed, downloaded = Trapper:dismissableRunInSubprocess(function()
-        local dl = {}
-        for _, item in ipairs(browser.downloads) do
-            if DownloadManager.downloadFile(browser, item.file, item.url,
-                                            item.username, item.password, nil,
-                                            item.metadata) then
-                dl[item.file] = true
-            end
-        end
-        return dl
-    end, info)
+    local downloaded = {}
+    local processed = 0
+    for _, item in ipairs(browser.downloads) do
+        info = refreshQueueProgressDialog(info, processed, total)
 
-    if completed then UIManager:close(info) end
+        local completed_item, success = Trapper:dismissableRunInSubprocess(
+                                            function()
+                return
+                    DownloadManager.downloadFile(browser, item.file, item.url,
+                                                 item.username, item.password,
+                                                 nil, item.metadata)
+            end, info)
+
+        if success then downloaded[item.file] = true end
+
+        processed = processed + 1
+
+        if not completed_item then break end
+    end
+
+    UIManager:close(info)
 
     local dl_count = #browser.downloads
     for i = dl_count, 1, -1 do
@@ -288,33 +307,48 @@ end
 -- @return table|nil List of duplicate files or nil
 function DownloadManager.downloadPendingSyncs(browser, dl_list)
     local function dismissable_download()
-        local info = InfoMessage:new{text = _("Downloading… (tap to cancel)")}
-        UIManager:show(info)
-        UIManager:forceRePaint()
+        local total = 0
+        for _, item in ipairs(dl_list) do
+            if browser.sync_server_list[item.catalog] then
+                total = total + 1
+            end
+        end
 
-        local completed, downloaded, duplicate_list =
-            Trapper:dismissableRunInSubprocess(function()
-                local dl = {}
-                local dupe_list = {}
-                for _, item in ipairs(dl_list) do
-                    if browser.sync_server_list[item.catalog] then
-                        if lfs.attributes(item.file) and not browser.sync_force then
-                            table.insert(dupe_list, item)
-                        else
-                            if DownloadManager.downloadFile(browser, item.file,
-                                                            item.url,
-                                                            item.username,
-                                                            item.password, nil,
-                                                            item.metadata) then
-                                dl[item.file] = true
-                            end
-                        end
+        local info = refreshQueueProgressDialog(nil, 0, total)
+
+        local downloaded = {}
+        local duplicate_list = {}
+        local processed = 0
+
+        for _, item in ipairs(dl_list) do
+            if browser.sync_server_list[item.catalog] then
+                info = refreshQueueProgressDialog(info, processed, total)
+
+                if lfs.attributes(item.file) and not browser.sync_force then
+                    table.insert(duplicate_list, item)
+                    processed = processed + 1
+                else
+                    local completed_item, success =
+                        Trapper:dismissableRunInSubprocess(function()
+                            return
+                                DownloadManager.downloadFile(browser, item.file,
+                                                             item.url,
+                                                             item.username,
+                                                             item.password, nil,
+                                                             item.metadata)
+                        end, info)
+
+                    if success then
+                        downloaded[item.file] = true
                     end
-                end
-                return dl, dupe_list
-            end, info)
 
-        if completed then UIManager:close(info) end
+                    processed = processed + 1
+                    if not completed_item then break end
+                end
+            end
+        end
+
+        UIManager:close(info)
 
         local dl_count = 0
         local dl_size = #dl_list
