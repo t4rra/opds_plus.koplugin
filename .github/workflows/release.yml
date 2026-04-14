@@ -23,6 +23,7 @@ jobs:
           zip -r opds_plus.koplugin.zip opds_plus.koplugin \
             -x '**/.git/*' \
             -x '**/.github/*' \
+            -x '**/*.md' \
             -x '**/*.zip'
 
       - name: Upload artifact
