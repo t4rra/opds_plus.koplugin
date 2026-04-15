@@ -233,12 +233,37 @@ end
 --- Delete stale local files that are no longer present on server
 -- @param stale_files table List of local file paths
 function SyncManager.deleteStaleFiles(stale_files)
+    local ReadCollection = require("readcollection")
     local deleted_count = 0
-    for _, path in ipairs(stale_files) do
+    local updated_collections = {}
+
+    for _, stale_entry in ipairs(stale_files) do
+        local path = stale_entry.path
+        local collection_name = stale_entry.collection_name
+
         if lfs.attributes(path) then
-            local ok = os.remove(path)
-            if ok then deleted_count = deleted_count + 1 end
+            if collection_name then
+                local removed = ReadCollection:removeItem(path, collection_name,
+                                                          true)
+                if removed then
+                    updated_collections[collection_name] = true
+                    logger.dbg("Removed stale file from collection",
+                               collection_name, path)
+                end
+            end
+
+            if not ReadCollection:isFileInCollections(path, true) then
+                local ok = os.remove(path)
+                if ok then deleted_count = deleted_count + 1 end
+            else
+                logger.dbg("Keeping stale file present in another collection",
+                           path)
+            end
         end
+    end
+
+    if next(updated_collections) ~= nil then
+        ReadCollection:write(updated_collections)
     end
 
     return deleted_count
@@ -313,6 +338,7 @@ function SyncManager.fillPendingSyncs(browser, server)
     browser.root_catalog_raw_names = server.raw_names
     browser.root_catalog_username = server.username
     browser.root_catalog_title = server.title
+    browser.root_catalog_url = server.url
     browser.sync_server = server
     browser.sync_server_list = browser.sync_server_list or {}
     browser.sync_max_dl = browser.settings.sync_max_dl or
@@ -321,13 +347,43 @@ function SyncManager.fillPendingSyncs(browser, server)
     local file_list = SyncManager.parseFiletypes(browser.settings.filetypes)
     local remote_files, file_metadata, manifest_complete =
         SyncManager.getServerManifest(browser, server, file_list)
+    local previous_synced_files = {}
+    if type(server.synced_files) == "table" then
+        for _, path in ipairs(server.synced_files) do
+            table.insert(previous_synced_files, path)
+        end
+    end
+
+    local queued_paths = {}
+    for _, queued in ipairs(browser.pending_syncs) do
+        queued_paths[queued.file] = true
+    end
+
+    local function queueSyncItem(download_path, link, metadata)
+        if queued_paths[download_path] then return false end
+
+        table.insert(browser.pending_syncs, {
+            file = download_path,
+            url = link.href,
+            username = browser.root_catalog_username,
+            password = browser.root_catalog_password,
+            catalog = server.url,
+            metadata = metadata
+        })
+        queued_paths[download_path] = true
+        return true
+    end
 
     if isOneWayMirrorSync(server) then
         if manifest_complete then
             local stale_files = SyncManager.getStaleLocalFiles(server,
                                                                remote_files)
             for _, stale_path in ipairs(stale_files) do
-                table.insert(browser.sync_stale_files, stale_path)
+                table.insert(browser.sync_stale_files, {
+                    path = stale_path,
+                    collection_name = server.use_collection and server.title or
+                        nil
+                })
             end
             browser:updateFieldInCatalog(server, "synced_files",
                                          SyncManager.toSortedFileList(
@@ -350,8 +406,8 @@ function SyncManager.fillPendingSyncs(browser, server)
 
     -- Check for missing synced files and add them back to pending syncs
     local missing_entries = {}
-    if manifest_complete and type(server.synced_files) == "table" then
-        for _, path in ipairs(server.synced_files) do
+    if manifest_complete and #previous_synced_files > 0 then
+        for _, path in ipairs(previous_synced_files) do
             if not lfs.attributes(path) and remote_files[path] then
                 table.insert(missing_entries, path)
             end
@@ -374,18 +430,14 @@ function SyncManager.fillPendingSyncs(browser, server)
                                                           {
                         source_catalog = server.title,
                         source_catalog_url = server.url,
+                        collection_enabled = server.use_collection,
                         sync = true
                     })
-                table.insert(browser.pending_syncs, {
-                    file = missing_path,
-                    url = acquisition.link.href,
-                    username = browser.root_catalog_username,
-                    password = browser.root_catalog_password,
-                    catalog = server.url,
-                    metadata = download_metadata
-                })
-                missing_count = missing_count + 1
-                dl_count = dl_count + 1
+                if queueSyncItem(missing_path, acquisition.link,
+                                 download_metadata) then
+                    missing_count = missing_count + 1
+                    dl_count = dl_count + 1
+                end
             end
         end
     end
@@ -430,17 +482,12 @@ function SyncManager.fillPendingSyncs(browser, server)
                                                                   filetype, {
                                 source_catalog = server.title,
                                 source_catalog_url = server.url,
+                                collection_enabled = server.use_collection,
                                 sync = true
                             })
-                        table.insert(browser.pending_syncs, {
-                            file = download_path,
-                            url = link.href,
-                            username = browser.root_catalog_username,
-                            password = browser.root_catalog_password,
-                            catalog = server.url,
-                            metadata = metadata
-                        })
-                        dl_count = dl_count + 1
+                        if queueSyncItem(download_path, link, metadata) then
+                            dl_count = dl_count + 1
+                        end
                     end
                     break
                 end

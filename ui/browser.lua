@@ -61,6 +61,7 @@ local OPDSBrowser = OPDSCoverMenu:extend{
     thumbnail_rel = Constants.THUMBNAIL_REL,
 
     root_catalog_title = nil,
+    root_catalog_url = nil,
     root_catalog_username = nil,
     root_catalog_password = nil,
     facet_groups = nil,
@@ -287,6 +288,7 @@ function OPDSBrowser:onMenuSelect(item)
                 return true
             end
             self.root_catalog_title = item.text
+            self.root_catalog_url = item.url
             self.root_catalog_username = item.username
             self.root_catalog_password = item.password
             self.root_catalog_raw_names = item.raw_names

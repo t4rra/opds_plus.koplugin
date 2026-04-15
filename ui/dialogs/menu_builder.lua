@@ -281,7 +281,8 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
     end
 
     local dialog, check_button_raw_names, check_button_sync_catalog,
-          check_button_sync_mode
+          check_button_sync_mode, check_button_use_collection,
+          sync_catalog_toggled
     dialog = MultiInputDialog:new{
         title = title,
         fields = fields,
@@ -324,9 +325,16 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
                         -- Use validated URL
                         new_fields[2] = validated_url_or_error
                         new_fields[5] = check_button_raw_names.checked or nil
-                        new_fields[6] = check_button_sync_catalog.checked or nil
-                        new_fields[7] = check_button_sync_mode.checked and
+
+                        -- Mirror sync depends on catalog sync being enabled.
+                        local sync_enabled =
+                            check_button_sync_catalog.checked and true or false
+                        new_fields[6] = sync_enabled or nil
+                        new_fields[7] = sync_enabled and
+                                            check_button_sync_mode.checked and
                                             Constants.SYNC.MODE_ONE_WAY_MIRROR or
+                                            nil
+                        new_fields[8] = check_button_use_collection.checked or
                                             nil
                         browser:editCatalogFromInput(new_fields, item)
                         UIManager:close(dialog)
@@ -343,17 +351,39 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
     check_button_sync_catalog = CheckButton:new{
         text = _("Sync catalog"),
         checked = item and item.sync,
+        callback = function()
+            if sync_catalog_toggled then sync_catalog_toggled() end
+        end,
         parent = dialog
     }
     check_button_sync_mode = CheckButton:new{
         text = _("Mirror sync"),
-        checked = not item or item.sync_mode ==
-            Constants.SYNC.MODE_ONE_WAY_MIRROR,
+        checked = (not item) or (item.sync and
+            (item.sync_mode == nil or item.sync_mode ==
+                Constants.SYNC.MODE_ONE_WAY_MIRROR)),
         parent = dialog
     }
+    check_button_use_collection = CheckButton:new{
+        text = _("Add downloads to catalog collection"),
+        checked = item and item.use_collection,
+        parent = dialog
+    }
+
+    sync_catalog_toggled = function()
+        if check_button_sync_catalog.checked then
+            check_button_sync_mode:enable()
+        else
+            check_button_sync_mode:disable()
+        end
+    end
+
+    -- Ensure initial enabled state follows Sync catalog.
+    sync_catalog_toggled()
+
     dialog:addWidget(check_button_raw_names)
     dialog:addWidget(check_button_sync_catalog)
     dialog:addWidget(check_button_sync_mode)
+    dialog:addWidget(check_button_use_collection)
 
     return dialog
 end

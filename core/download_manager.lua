@@ -47,6 +47,64 @@ local function normalizeAuthors(item)
     return nil
 end
 
+local function resolveRootCatalog(browser)
+    if type(browser) ~= "table" or type(browser.servers) ~= "table" then
+        return nil
+    end
+
+    for _, server in ipairs(browser.servers) do
+        if type(browser.root_catalog_url) == "string" and
+            browser.root_catalog_url ~= "" and server.url ==
+            browser.root_catalog_url then return server end
+    end
+
+    for _, server in ipairs(browser.servers) do
+        if type(browser.root_catalog_title) == "string" and
+            browser.root_catalog_title ~= "" and server.title ==
+            browser.root_catalog_title then return server end
+    end
+
+    return nil
+end
+
+local function cloneMetadata(metadata)
+    if type(metadata) ~= "table" then return metadata end
+    local clone = {}
+    for key, value in pairs(metadata) do clone[key] = value end
+    return clone
+end
+
+local function getCollectionName(metadata)
+    if not metadata or not metadata.collection_enabled then return nil end
+    if type(metadata.source_catalog) ~= "string" then return nil end
+    if metadata.source_catalog == "" then return nil end
+    return metadata.source_catalog
+end
+
+local function applyCollectionFromMetadata(book_path, metadata)
+    local collection_name = getCollectionName(metadata)
+    if not collection_name then return end
+
+    local ok, err = pcall(function()
+        local ReadCollection = require("readcollection")
+
+        if not ReadCollection.coll[collection_name] then
+            ReadCollection:addCollection(collection_name)
+        end
+
+        ReadCollection:addItem(book_path, collection_name)
+        ReadCollection:write({[collection_name] = true})
+    end)
+
+    if not ok then
+        logger.warn("Could not update KOReader collection", collection_name,
+                    book_path, err)
+        return
+    end
+
+    logger.dbg("Added book to KOReader collection", collection_name, book_path)
+end
+
 -- Build OPDS metadata payload for KOReader custom metadata persistence
 -- @param browser table OPDSBrowser instance
 -- @param item table Book item
@@ -56,6 +114,8 @@ end
 -- @return table Metadata table
 function DownloadManager.buildDownloadMetadata(browser, item, acquisition,
                                                filetype, extra)
+    local root_server = resolveRootCatalog(browser)
+
     local summary = ""
     if type(item.content) == "string" then
         summary = util.htmlToPlainTextIfHtml(item.content)
@@ -76,7 +136,8 @@ function DownloadManager.buildDownloadMetadata(browser, item, acquisition,
         opds_published = item.opds_published,
         source_catalog = browser.root_catalog_title,
         source_catalog_url = browser.sync_server and browser.sync_server.url or
-            nil,
+            (root_server and root_server.url or nil),
+        collection_enabled = root_server and root_server.use_collection or nil,
         acquisition_url = acquisition and acquisition.href or nil,
         acquisition_type = acquisition and acquisition.type or nil,
         cover_url = item.image or item.thumbnail,
@@ -174,6 +235,9 @@ function DownloadManager.downloadFile(browser, local_path, remote_url, username,
                 logger.warn("Could not write OPDS custom metadata for",
                             local_path, err)
             else
+                if metadata._apply_collection_in_this_process ~= false then
+                    applyCollectionFromMetadata(local_path, metadata)
+                end
                 UIManager:broadcastEvent(
                     Event:new("InvalidateMetadataCache", local_path))
                 UIManager:broadcastEvent(Event:new("BookMetadataChanged"))
@@ -255,13 +319,21 @@ function DownloadManager.downloadDownloadList(browser)
 
         local completed_item, success = Trapper:dismissableRunInSubprocess(
                                             function()
+                local subprocess_metadata = cloneMetadata(item.metadata)
+                if type(subprocess_metadata) == "table" then
+                    subprocess_metadata._apply_collection_in_this_process =
+                        false
+                end
                 return
                     DownloadManager.downloadFile(browser, item.file, item.url,
                                                  item.username, item.password,
-                                                 nil, item.metadata)
+                                                 nil, subprocess_metadata)
             end, info)
 
-        if success then downloaded[item.file] = true end
+        if success then
+            downloaded[item.file] = true
+            applyCollectionFromMetadata(item.file, item.metadata)
+        end
 
         processed = processed + 1
 
@@ -330,16 +402,23 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
                 else
                     local completed_item, success =
                         Trapper:dismissableRunInSubprocess(function()
+                            local subprocess_metadata =
+                                cloneMetadata(item.metadata)
+                            if type(subprocess_metadata) == "table" then
+                                subprocess_metadata._apply_collection_in_this_process =
+                                    false
+                            end
                             return
                                 DownloadManager.downloadFile(browser, item.file,
                                                              item.url,
                                                              item.username,
                                                              item.password, nil,
-                                                             item.metadata)
+                                                             subprocess_metadata)
                         end, info)
 
                     if success then
                         downloaded[item.file] = true
+                        applyCollectionFromMetadata(item.file, item.metadata)
                     end
 
                     processed = processed + 1

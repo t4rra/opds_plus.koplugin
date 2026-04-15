@@ -21,7 +21,7 @@ end
 -- Add or update a catalog from input fields
 -- @param servers table List of server configurations
 -- @param item_table table Current item table
--- @param fields table Input fields: [1]=title, [2]=url, [3]=username, [4]=password, [5]=raw_names, [6]=sync
+-- @param fields table Input fields: [1]=title, [2]=url, [3]=username, [4]=password, [5]=raw_names, [6]=sync, [7]=sync_mode, [8]=use_collection
 -- @param item table|nil Existing item to update (nil for new)
 -- @param no_refresh boolean Don't refresh item table if true
 -- @return number, number New index, item number for refresh
@@ -34,6 +34,7 @@ function CatalogManager.editCatalogFromInput(servers, item_table, fields, item,
         password = fields[4] ~= "" and fields[4] or nil,
         raw_names = fields[5],
         sync = fields[6],
+        use_collection = fields[8],
         sync_mode = fields[6] and
             (fields[7] or Constants.SYNC.MODE_ONE_WAY_MIRROR) or nil
     }
@@ -187,6 +188,7 @@ function CatalogManager.exportCatalogs(servers, include_credentials)
             url = server.url,
             raw_names = server.raw_names,
             sync = server.sync,
+            use_collection = server.use_collection,
             sync_mode = server.sync_mode
         }
 
@@ -233,6 +235,7 @@ function CatalogManager.importCatalogs(servers, import_data, merge_duplicates)
                     password = catalog.password,
                     raw_names = catalog.raw_names,
                     sync = catalog.sync,
+                    use_collection = catalog.use_collection,
                     sync_mode = catalog.sync and
                         (catalog.sync_mode or Constants.SYNC.MODE_ONE_WAY_MIRROR) or
                         nil
@@ -317,6 +320,7 @@ function CatalogManager.duplicateCatalog(server, new_title)
         password = server.password,
         raw_names = server.raw_names,
         sync = server.sync,
+        use_collection = server.use_collection,
         sync_mode = server.sync and
             (server.sync_mode or Constants.SYNC.MODE_ONE_WAY_MIRROR) or nil,
         last_download = nil, -- Don't copy sync state
