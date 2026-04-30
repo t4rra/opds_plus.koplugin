@@ -17,7 +17,7 @@ local T = require("ffi/util").template
 local Constants = require("models.constants")
 local DownloadManager = require("core.download_manager")
 local StateManager = require("core.state_manager")
-local FileLogger = require("utils.file_logger")
+ 
 
 local SyncManager = {}
 
@@ -288,8 +288,6 @@ function SyncManager.checkAndStartSync(browser, server_idx)
     browser.sync_server_list = {}
     browser.sync_change_summary = nil
     browser.sync_requires_refresh = nil
-    FileLogger.append("Sync start", "server_idx=", tostring(server_idx),
-                      "sync_force=", tostring(browser.sync_force))
     local info = InfoMessage:new{text = _("Synchronizing lists…")}
     UIManager:show(info)
     UIManager:forceRePaint()
@@ -314,8 +312,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
     end
 
     local added_count = #browser.pending_syncs
-    FileLogger.append("Sync queue built", "added=", tostring(added_count),
-                      "stale=", tostring(#browser.sync_stale_files))
+    
     browser.sync_requires_refresh = (added_count > 0 or deleted_count > 0) and
                                         true or nil
     if added_count > 0 or deleted_count > 0 then
@@ -539,10 +536,6 @@ function SyncManager.getSyncDownloadList(browser, url_arg)
             logger.warn(
                 "SyncManager.getSyncDownloadList: empty page fetched for",
                 fetch_url)
-            FileLogger.append("Sync empty page", "url=", tostring(fetch_url),
-                              "server=", tostring(
-                                  browser.sync_server and
-                                      browser.sync_server.title))
             return sync_table
         end
 
@@ -568,17 +561,12 @@ function SyncManager.getSyncDownloadList(browser, url_arg)
             first_href = sub_table[1].acquisitions[1].href
         end
 
-        if first_href == browser.sync_server.last_download and
+            if first_href == browser.sync_server.last_download and
             not browser.sync_force then
             logger.dbg("SyncManager.getSyncDownloadList: up-to-date check",
                        "first_href=", tostring(first_href), "last_download=",
                        tostring(browser.sync_server.last_download),
                        "sync_force=", tostring(browser.sync_force))
-            FileLogger.append("Sync up-to-date check matched", "first_href=",
-                              tostring(first_href), "last_download=",
-                              tostring(browser.sync_server.last_download),
-                              "sync_force=", tostring(browser.sync_force),
-                              "fetch_url=", tostring(fetch_url))
             return nil
         end
 
