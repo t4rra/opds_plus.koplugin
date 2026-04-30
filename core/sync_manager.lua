@@ -34,6 +34,7 @@ local function startDownloadsOrNotify(browser)
             UIManager:broadcastEvent(Event:new("RefreshContent"))
             UIManager:broadcastEvent(Event:new("BookMetadataChanged"))
             browser.sync_requires_refresh = nil
+            return
         end
         UIManager:show(InfoMessage:new{text = _("Up to date!")})
     end

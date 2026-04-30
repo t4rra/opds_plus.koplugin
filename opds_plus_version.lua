@@ -1,1 +1,1 @@
-return { VERSION = "1.2.1" }
+return { VERSION = "1.2.2-dev.1" }
