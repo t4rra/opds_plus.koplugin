@@ -18,7 +18,6 @@ local Constants = require("models.constants")
 local DownloadManager = require("core.download_manager")
 local StateManager = require("core.state_manager")
 local OPDSMetadata = require("services.opds_metadata")
- 
 
 local SyncManager = {}
 
@@ -323,7 +322,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
     end
 
     local added_count = #browser.pending_syncs
-    
+
     browser.sync_requires_refresh = (added_count > 0 or deleted_count > 0) and
                                         true or nil
     if added_count > 0 or deleted_count > 0 then
@@ -572,7 +571,7 @@ function SyncManager.getSyncDownloadList(browser, url_arg)
             first_href = sub_table[1].acquisitions[1].href
         end
 
-            if first_href == browser.sync_server.last_download and
+        if first_href == browser.sync_server.last_download and
             not browser.sync_force then
             logger.dbg("SyncManager.getSyncDownloadList: up-to-date check",
                        "first_href=", tostring(first_href), "last_download=",

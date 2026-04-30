@@ -15,7 +15,9 @@ function OPDSMetadata.removeSidecar(book_path)
 
     local ok, err = pcall(function()
         local custom_doc_settings = DocSettings.openSettingsFile()
-        if not custom_doc_settings then error("could not open custom DocSettings") end
+        if not custom_doc_settings then
+            error("could not open custom DocSettings")
+        end
 
         -- Try to clear any custom props for this book and flush the change.
         -- Some DocSettings implementations may provide a direct removal API;
