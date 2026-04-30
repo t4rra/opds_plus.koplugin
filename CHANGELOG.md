@@ -7,15 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ## [1.2.2] - (in progress)
 
 ### Added
+
 - **Collections Creation**:
   - Added option to create collections from synced catalogs
 - **Sync Diagnostics Log File**:
   - Added plugin-owned debug log output at `koreader/opdsplus-debug.log` for sync troubleshooting
 
 ### Changed
+
 - Disabled Mirror Sync option if catalog is not marked for syncing to prevent confusion
 
 ### Fixed
+
 - Mirror sync now queues newly-added remote files on the first sync run (no second button press needed)
 
 ## [1.2.1] - 2026-04-14
