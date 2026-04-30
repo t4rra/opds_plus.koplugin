@@ -283,6 +283,9 @@ function SyncManager.checkAndStartSync(browser, server_idx)
     browser.sync = true
     browser.pending_syncs = {}
     browser.sync_stale_files = {}
+    browser.sync_server_list = {}
+    browser.sync_change_summary = nil
+    browser.sync_requires_refresh = nil
     local info = InfoMessage:new{text = _("Synchronizing lists…")}
     UIManager:show(info)
     UIManager:forceRePaint()
