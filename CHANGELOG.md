@@ -11,10 +11,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - **Collections Creation**:
   - Added option to create collections from synced catalogs
 
-
 ### Changed
 
 - Disabled Mirror Sync option if catalog is not marked for syncing to prevent confusion
+
+### Fixed
+
+- Remove sidecar files in addition to books
 
 ## [1.2.1] - 2026-04-14
 

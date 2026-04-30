@@ -17,6 +17,7 @@ local T = require("ffi/util").template
 local Constants = require("models.constants")
 local DownloadManager = require("core.download_manager")
 local StateManager = require("core.state_manager")
+local OPDSMetadata = require("services.opds_metadata")
  
 
 local SyncManager = {}
@@ -255,6 +256,16 @@ function SyncManager.deleteStaleFiles(stale_files)
             end
 
             if not ReadCollection:isFileInCollections(path, true) then
+                -- Remove any KOReader/OPDS sidecar metadata for this book first.
+                local ok_meta, removed, rem_err = pcall(function()
+                    return OPDSMetadata.removeSidecar(path)
+                end)
+                if not ok_meta then
+                    logger.dbg("Error removing sidecar (pcall)", path, removed)
+                elseif removed == false then
+                    logger.dbg("Could not remove sidecar", path, rem_err)
+                end
+
                 local ok = os.remove(path)
                 if ok then deleted_count = deleted_count + 1 end
             else

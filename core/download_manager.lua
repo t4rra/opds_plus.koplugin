@@ -353,6 +353,9 @@ function DownloadManager.downloadDownloadList(browser)
                 if attr.size > 0 then
                     table.remove(browser.downloads, i)
                 else -- incomplete download
+                    pcall(function()
+                        OPDSMetadata.removeSidecar(item.file)
+                    end)
                     os.remove(item.file)
                 end
             end
@@ -447,6 +450,9 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
                             dl_count = dl_count + 1
                         end
                     else -- incomplete download
+                        pcall(function()
+                            OPDSMetadata.removeSidecar(item.file)
+                        end)
                         os.remove(item.file)
                     end
                 end

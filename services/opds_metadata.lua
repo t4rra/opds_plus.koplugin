@@ -5,6 +5,30 @@ local DocSettings = require("docsettings")
 
 local OPDSMetadata = {}
 
+-- Remove any custom sidecar/metadata associated with a book path.
+-- Attempts to clear custom_props for the given book and flush.
+-- Returns true on success or false, err on failure.
+function OPDSMetadata.removeSidecar(book_path)
+    if type(book_path) ~= "string" or book_path == "" then
+        return false, "invalid book path"
+    end
+
+    local ok, err = pcall(function()
+        local custom_doc_settings = DocSettings.openSettingsFile()
+        if not custom_doc_settings then error("could not open custom DocSettings") end
+
+        -- Try to clear any custom props for this book and flush the change.
+        -- Some DocSettings implementations may provide a direct removal API;
+        -- saving nil for the key is a best-effort fallback.
+        custom_doc_settings:saveSetting("custom_props", nil)
+        custom_doc_settings:flushCustomMetadata(book_path)
+    end)
+
+    if not ok then return false, err end
+    logger.dbg("OPDS custom sidecar removed", book_path)
+    return true
+end
+
 local function isArray(value)
     if type(value) ~= "table" then return false end
     local max = 0
