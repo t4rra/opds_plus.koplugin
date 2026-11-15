@@ -558,10 +558,10 @@ function SyncManager.showSyncSummary(browser, sync_error)
 	section(_("Already on the device"), #duplicates)
 
 	if incomplete then
-		table.insert(lines, _("Mirror sync: the catalog feed could not be fully read; no local files were deleted."))
+		table.insert(lines, _("Mirror sync: the catalog feed could not be fully read."))
 	end
 	if empty then
-		table.insert(lines, _("Mirror sync: the catalog feed is empty; no local files were deleted."))
+		table.insert(lines, _("Mirror sync: the catalog feed is empty."))
 	end
 	if undeletable > 0 then
 		table.insert(lines, T(_("Mirror sync: %1 file(s) could not be deleted."), undeletable))
@@ -570,7 +570,7 @@ function SyncManager.showSyncSummary(browser, sync_error)
 		table.insert(lines, _("Sync was cancelled; some books may be missing."))
 	end
 	if #lines == 0 then
-		table.insert(lines, _("Up to date — nothing was added or removed."))
+		table.insert(lines, _("Up to date."))
 	end
 
 	local viewer
