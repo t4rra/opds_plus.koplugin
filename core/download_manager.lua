@@ -168,6 +168,16 @@ local function propPresent(value, key)
 	return type(value) == "string" and value:find("%S") ~= nil
 end
 
+-- Invalidate the cover browser's cached book info for a file, as KOReader does after a
+-- metadata edit. It only re-reads a book when its row is missing and never notices a custom
+-- metadata edit. UI process only; a no-op elsewhere.
+local function invalidateBookInfoCache(file)
+	local ok, Event = pcall(require, "ui/event")
+	if ok and Event and type(UIManager.broadcastEvent) == "function" then
+		UIManager:broadcastEvent(Event:new("InvalidateMetadataCache", file))
+	end
+end
+
 -- Read the metadata KOReader shows for a book that has not been opened yet
 -- @param file string Path of the book
 -- @return table|nil Book properties, or nil if the book can't be read
@@ -385,7 +395,10 @@ function DownloadManager.checkDownloadFile(browser, local_path, remote_url, user
 			download_options.progress = function(bytes)
 				dialog:reportBytes(bytes)
 			end
-			DownloadManager.downloadFile(browser, local_path, remote_url, username, password, caller_callback, download_options)
+			local ok = DownloadManager.downloadFile(browser, local_path, remote_url, username, password, caller_callback, download_options)
+			if ok then
+				invalidateBookInfoCache(local_path)
+			end
 			UIManager:close(dialog)
 		end)
 	end
@@ -438,6 +451,10 @@ function DownloadManager.downloadDownloadList(browser)
 	end, watch.dialog)
 
 	finishProgressWatch(watch)
+
+	for file in pairs(downloaded or {}) do
+		invalidateBookInfoCache(file)
+	end
 
 	local dl_count = #browser.downloads
 	for i = dl_count, 1, -1 do
@@ -507,6 +524,10 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
 		end, watch.dialog)
 
 		finishProgressWatch(watch)
+
+		for file in pairs(downloaded or {}) do
+			invalidateBookInfoCache(file)
+		end
 
 		-- A book that was already on the device is not one this run downloaded, however recent its file is
 		local is_duplicate = {}

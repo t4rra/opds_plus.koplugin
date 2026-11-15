@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - **Live Download Progress**: Downloads show a progress dialog with the current book, how many MB have arrived so far and, for batches, which book of how many is downloading. The figure updates while the transfer runs; tapping the notice cancels a batch.
 - **Mirror Sync**: A per-catalog **Mirror Sync** checkbox in the Edit dialog makes the sync folder a true mirror of the catalog. Books that are removed from the catalog on the server are deleted locally on the next sync. Deletion is tracked through a manifest kept in the sync folder (`.opds_plus_mirror.lua`), keyed by catalog entry identity rather than file name, so it does not depend on reversible or filesystem-safe titles. Only files downloaded by OPDS Plus for that catalog are deleted; an unreadable or empty feed deletes nothing; KOReader `.sdr` sidecars are kept.
 
+### Fixed
+
+- **Book Information Shows Downloaded Metadata**: Downloading a book now drops its stale cover browser book information (SQLite cache), as KOReader does after a metadata edit, so the next view re-extracts it with the saved title, authors, series, series index, language and description instead of showing "N/A" next to the names we wrote.
+
 ### Changed
 
 - **One Sync Summary**: One dialog at the end of a sync, instead of stacked popups, with counts of books added, removed by Mirror Sync, not downloaded and already on the device (no file names). Duplicate files keep their Do nothing / Overwrite / Download copies actions inside the same dialog.

@@ -812,6 +812,22 @@ describe("DownloadManager", function()
 			assert.same({ description = "A desert planet." }, doc_settings.saved[target].custom_props)
 		end)
 
+		it("drops the book's stale cover browser book information after saving its metadata", function()
+			registry.open_document = function()
+				return book_document({ title = "Dune" })
+			end
+			helper.stub("ui/event", {
+				new = function(_, name, file)
+					return { name = name, args = { file } }
+				end,
+			})
+
+			DownloadManager.checkDownloadFile(browser, target, URL, nil, nil, nil, { description = "A desert planet." })
+			ui:run_scheduled()
+
+			assert.same({ { name = "InvalidateMetadataCache", args = { target } } }, ui.broadcasts)
+		end)
+
 		it("captures credential provenance before a delayed download and later catalog navigation", function()
 			browser.root_catalog_url = "https://source.example/opds"
 			DownloadManager.checkDownloadFile(browser, target, URL, "reader", "secret")

@@ -35,7 +35,7 @@ local function identity(text)
 end
 
 function M.new()
-	local ui = { shown = {}, closed = {}, scheduled = {} }
+	local ui = { shown = {}, closed = {}, scheduled = {}, broadcasts = {} }
 
 	local UIManager = {}
 	function UIManager:show(widget)
@@ -64,6 +64,9 @@ function M.new()
 	end
 	function UIManager:setDirty() end
 	function UIManager:forceRePaint() end
+	function UIManager:broadcastEvent(event)
+		ui.broadcasts[#ui.broadcasts + 1] = event
+	end
 
 	-- The text wrappers of the real ui/bidi; without the Unicode marks they add, they return the text as is.
 	local BD = {}
