@@ -233,6 +233,95 @@ describe("DownloadManager", function()
 		end)
 	end)
 
+	describe("saveMetadata", function()
+		local FILE = "/books/Dune.cbz"
+		local props, document
+
+		before_each(function()
+			props = {} -- a comic carries no metadata of its own
+			document = book_document(props)
+			registry.open_document = function()
+				return document
+			end
+		end)
+
+		it("writes every field the book is missing, keeping the catalog's plain text", function()
+			local saved = DownloadManager.saveMetadata(FILE, {
+				title = "Dune", authors = "Frank Herbert", series = "Dune Chronicles",
+				series_index = 2, language = "en", description = "A desert planet.",
+			})
+
+			assert.is_true(saved)
+			assert.same({
+				title = "Dune", authors = "Frank Herbert", series = "Dune Chronicles",
+				series_index = 2, language = "en", description = "A desert planet.",
+			}, doc_settings.saved[FILE].custom_props)
+			assert.equals(321, doc_settings.saved[FILE].doc_props.pages)
+			assert.is_true(document.closed)
+		end)
+
+		it("keeps the fields the book carries itself, and writes only the gaps", function()
+			props.title = "Book of Dune"
+			props.authors = "Real Author"
+			props.description = "Embedded description."
+
+			local saved = DownloadManager.saveMetadata(FILE, {
+				title = "Dune", authors = "Ann Author", series = "Dune Chronicles",
+				language = "en", description = "Catalog text.",
+			})
+
+			assert.is_true(saved)
+			assert.same({ series = "Dune Chronicles", language = "en" }, doc_settings.saved[FILE].custom_props)
+			assert.equals("Book of Dune", doc_settings.saved[FILE].doc_props.title)
+		end)
+
+		it("treats a blank property of the book as missing", function()
+			props.title = "  "
+			props.description = ""
+
+			local saved = DownloadManager.saveMetadata(FILE, {
+				title = "Dune", description = "A desert planet.",
+			})
+
+			assert.is_true(saved)
+			assert.same({ title = "Dune", description = "A desert planet." }, doc_settings.saved[FILE].custom_props)
+		end)
+
+		it("writes nothing when the book has everything the catalog offers", function()
+			props.title = "Dune"
+			props.authors = "Frank Herbert"
+			props.language = "en"
+			props.description = "Embedded description."
+			props.series = "Dune Chronicles"
+			props.series_index = 1
+
+			assert.is_false(DownloadManager.saveMetadata(FILE, {
+				title = "Other", authors = "Other", series = "Other",
+				series_index = 2, language = "de", description = "Catalog text.",
+			}))
+			assert.is_nil(doc_settings.saved[FILE])
+		end)
+
+		it("ignores values that are not text, or are blank", function()
+			local saved = DownloadManager.saveMetadata(FILE, {
+				description = 42, title = "  \n", series_index = "2.5", language = "en",
+			})
+
+			assert.is_true(saved)
+			assert.same({ series_index = "2.5", language = "en" }, doc_settings.saved[FILE].custom_props)
+		end)
+
+		it("ignores a table whose content is unusable", function()
+			assert.is_false(DownloadManager.saveMetadata(FILE, "Dune"))
+			assert.same({}, registry.calls)
+		end)
+
+		it("saveDescription passes on only the description", function()
+			assert.is_true(DownloadManager.saveDescription(FILE, "A desert planet."))
+			assert.same({ description = "A desert planet." }, doc_settings.saved[FILE].custom_props)
+		end)
+	end)
+
 	describe("saveDescription", function()
 		local FILE = "/books/Dune.epub"
 		local props, document
@@ -343,7 +432,7 @@ describe("DownloadManager", function()
 
 			assert.is_false(DownloadManager.saveDescription(FILE, "A desert planet."))
 
-			assert.is_true(require("logger").logged("warn", "could not save the description"))
+			assert.is_true(require("logger").logged("warn", "could not save the metadata"))
 		end)
 	end)
 
@@ -600,6 +689,44 @@ describe("DownloadManager", function()
 					return book_document({ title = "Dune" })
 				end
 				http:on(URL, { code = 200, body = BODY })
+			end)
+
+			it("saves the catalog's metadata, keeping what the book carries and filling the rest", function()
+				registry.open_document = function()
+					return book_document({ title = "Real Book Title" })
+				end
+
+				DownloadManager.downloadFile(browser, target, URL, nil, nil, nil, {
+					metadata = {
+						title = "Catalog Title", authors = "Ann Author", series = "Dune Chronicles",
+						series_index = 2, language = "en", description = "A desert planet.",
+					},
+				})
+
+				assert.same({
+					authors = "Ann Author", series = "Dune Chronicles", series_index = 2,
+					language = "en", description = "A desert planet.",
+				}, doc_settings.saved[target].custom_props)
+				assert.equals("Real Book Title", doc_settings.saved[target].doc_props.title)
+
+				-- and a comic, which carries nothing of its own
+				registry.open_document = function()
+					return book_document({})
+				end
+
+				local comic_target = dir .. "/Dune.cbz"
+
+				DownloadManager.downloadFile(browser, comic_target, URL, nil, nil, nil, {
+					metadata = {
+						title = "Dune", authors = "Ann Author", series = "Dune Chronicles",
+						series_index = "2", language = "en", description = "A desert planet.",
+					},
+				})
+
+				assert.same({
+					title = "Dune", authors = "Ann Author", series = "Dune Chronicles",
+					series_index = "2", language = "en", description = "A desert planet.",
+				}, doc_settings.saved[comic_target].custom_props)
 			end)
 
 			it("saves it with the book", function()

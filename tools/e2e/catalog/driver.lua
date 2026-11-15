@@ -2745,6 +2745,7 @@ local function descsave_steps()
     end
 
     local function single_format() return press_button(b.book_info_dialog, "Download (EPUB)") end
+    local function single_format_cbz() return press_button(b.book_info_dialog, "Download (CBZ)") end
     local function choose_format()
         return press_button(b.book_info_dialog, "Download…") and press_button(b.format_dialog, "EPUB")
     end
@@ -2785,7 +2786,7 @@ local function descsave_steps()
             G_reader_settings:saveSetting("download_dir", dir)
             server = add_server(p, "Mock Descriptions", "/opds/desc")
 
-            local entry = find_menu_entry(p, { "Settings", "Save Description with Downloads" })
+            local entry = find_menu_entry(p, { "Settings", "Save Metadata with Downloads" })
             c.check("setting.has_a_menu_entry", entry ~= nil)
             c.check("setting.default_is_on", p:getSetting("save_book_description") == true,
                 p:getSetting("save_book_description"))
@@ -2801,7 +2802,7 @@ local function descsave_steps()
                 c.check("setting.toggles_on", p:getSetting("save_book_description") == true
                     and entry.checked_func() == true)
                 c.check("setting.says_so_when_on", toast_has("will be saved"), toasts[#toasts])
-                close_window_with_text("Descriptions will")
+                close_window_with_text("Metadata will")
             end
         end,
         function()
@@ -2810,12 +2811,12 @@ local function descsave_steps()
         end,
         function()
             local books = count(b)
-            c.check("feed.lists_the_books", books == 5, books)
+            c.check("feed.lists_the_books", books == 6, books)
             local item = assert(find_item(b, "Desc Book A"))
             item.series, item.series_index = "Description Series", "2"
             item.content = "SERIES: Description Series [2]<br />" .. item.content
         end,
-        -- A: html description, the book has none of its own: it is saved as plain text next to the real properties
+        -- A: the book has none of its own, so the description, series and index the catalog gives are saved; what the book carries stays
         download("A", "Desc Book A", single_format, function(file)
             local meta = custom_metadata(file)
             c.check("A.saves_custom_metadata", meta ~= nil)
@@ -2825,7 +2826,10 @@ local function descsave_steps()
             c.check("A.description_is_plain_text", text:find("bold", 1, true) and text:find("Second paragraph.", 1, true)
                 and not text:find("[<>&]"), text)
             c.check("A.description_has_no_duplicate_series", not text:find("SERIES:", 1, true))
-            c.check("A.only_the_description_is_custom", count_keys(meta.custom) == 1, count_keys(meta.custom))
+            c.check("A.fills_only_what_the_book_lacks", count_keys(meta.custom) == 3
+                and meta.custom.series == "Description Series" and tonumber(meta.custom.series_index) == 2
+                and meta.custom.title == nil and meta.custom.authors == nil and meta.custom.language == nil,
+                count_keys(meta.custom))
             c.check("A.original_title_kept", meta.original.title == TITLE, meta.original.title)
             c.check("A.original_authors_kept", meta.original.authors == AUTHOR, meta.original.authors)
             local BookInfo = require("apps/filemanager/filemanagerbookinfo")
@@ -2906,6 +2910,17 @@ local function descsave_steps()
             local meta = custom_metadata(file)
             emit("descsave.E.metadata", meta
                 and (tostring(meta.original.title) .. " / " .. tostring(meta.custom.description)) or "none")
+        end),
+        -- Comic books (CBZ) carry no metadata of their own: the catalog's title, author and description are saved for them
+        download("Comic", "Desc Comic A", single_format_cbz, function(file)
+            local meta = custom_metadata(file)
+            c.check("comic.metadata_saved", meta ~= nil
+                and meta.custom.title == "Desc Comic A" and meta.custom.authors == "Ann Author"
+                and meta.custom.description == "Catalog text for the comic.",
+                meta and table.concat({ tostring(meta.custom.title), tostring(meta.custom.authors),
+                    tostring(meta.custom.description) }, " / ") or "no metadata")
+            c.check("comic.original_pages_kept", meta ~= nil and tonumber(meta.original.pages) == 1,
+                meta and tostring(meta.original.pages))
         end),
         -- Files KOReader can't open at all: nothing is saved and nothing is thrown
         function()

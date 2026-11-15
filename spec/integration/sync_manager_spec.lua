@@ -395,6 +395,7 @@ describe("SyncManager", function()
 					password = "secret",
 					catalog = SERVER_URL,
 					info = "A desert planet.",
+					metadata = { description = "A desert planet.", title = "Dune" },
 				},
 			}, browser.pending_syncs)
 		end)

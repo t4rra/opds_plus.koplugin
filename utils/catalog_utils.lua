@@ -4,8 +4,10 @@
 local util = require("util")
 local logger = require("logger")
 local socket_url = require("socket.url")
+local _ = require("gettext")
 local UriTemplate = require("utils.uri_template")
 local RequestHeaders = require("utils.request_headers")
+local Constants = require("models.constants")
 
 local CatalogUtils = {}
 
@@ -330,6 +332,43 @@ function CatalogUtils.extractPSEStreamInfo(link, stream_url)
 		end
 	end
 	return count, last_read
+end
+
+-- Catalog metadata of an entry as a table for saving with the downloaded file: only
+-- what KOReader's Book information can show (title, authors, series, series_index,
+-- language, description). A title the catalog did not give ("Unknown") counts as missing.
+function CatalogUtils.getMetadata(entry)
+	if type(entry) ~= "table" then
+		return {}
+	end
+	local metadata = {}
+	local function put(key, value)
+		if type(value) == "string" then
+			value = util.trim(value)
+			if value ~= "" then
+				metadata[key] = value
+			end
+		elseif type(value) == "number" then
+			metadata[key] = value
+		end
+	end
+	if entry.title ~= _(Constants.DEFAULT_TITLE) then
+		put("title", entry.title)
+	end
+	put("authors", entry.author)
+	put("series", entry.series)
+	if entry.series_index ~= nil then
+		local index = util.trim(tostring(entry.series_index))
+		if index ~= "" then
+			metadata.series_index = tonumber(index) or index
+		end
+	end
+	put("language", entry.language)
+	local description = CatalogUtils.getDescription(entry)
+	if description:find("%S") then
+		metadata.description = description
+	end
+	return metadata
 end
 
 --- Get the description of an entry as plain text

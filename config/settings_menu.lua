@@ -382,7 +382,7 @@ function SettingsMenu.create(plugin)
 					},
 				},
 				{
-					text = _("Save Description with Downloads"),
+					text = _("Save Metadata with Downloads"),
 					checked_func = function()
 						return plugin:getSetting("save_book_description") ~= false
 					end,
@@ -391,8 +391,8 @@ function SettingsMenu.create(plugin)
 						plugin:saveSetting("save_book_description", not current)
 						UIManager:show(InfoMessage:new {
 							text = not current and
-								_("Descriptions will be saved with downloaded books.") or
-								_("Descriptions will no longer be saved with downloaded books."),
+								_("Metadata will be saved with downloaded books.") or
+								_("Metadata will no longer be saved with downloaded books."),
 							timeout = 2,
 						})
 					end,

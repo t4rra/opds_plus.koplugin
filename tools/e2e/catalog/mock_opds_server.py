@@ -15,7 +15,8 @@ Endpoints (GET and HEAD):
   /opds/echo              feed that lists the request headers it received
   /opds/desc, /opds/desc_sync
                           books with a catalog description (html or text) whose files are real EPUBs: one without
-                          a description of its own, one that has it, one offered in two formats (for #85)
+                          a description of its own, one that has it, one offered in two formats, and a CBZ comic
+                          carrying no metadata of its own (for #85)
   /opds/sync, /opds/sync_mixed, /opds/gut_root (+ /opds/gut_sub.opds)
                           small newest-first feeds for the sync scenarios (plain, link-less first entry,
                           Project Gutenberg style with a one-book sub-feed)
@@ -280,6 +281,8 @@ def desc_feed(path):
         desc_entry("Desc Book D", '<content type="text">Catalog text for D.</content>', [plain]),
         desc_entry("Desc Book E", '<content type="text">Catalog text for E.</content>',
                    [("/dl/905.epub", EPUB_MIME, "EPUB")]),
+        desc_entry("Desc Comic A", '<content type="text">Catalog text for the comic.</content>',
+                   [("/dl/905.cbz", "application/vnd.comicbook+zip", "CBZ")]),
     ]
     return feed("Description feed", path, ACQ, entries)
 

@@ -251,6 +251,7 @@ function SyncManager.fillPendingSyncs(browser, server)
 								password = browser.root_catalog_password,
 								catalog = server.url,
 								info = CatalogUtils.getDescription(item),
+								metadata = CatalogUtils.getMetadata(item),
 							})
 							dl_count = dl_count + 1
 						end
@@ -315,6 +316,7 @@ function SyncManager.fillMirrorPendingSyncs(browser, server, file_list)
 				password = browser.root_catalog_password,
 				catalog = server.url,
 				info = CatalogUtils.getDescription(d.entry),
+				metadata = CatalogUtils.getMetadata(d.entry),
 				mirror = true,
 				mirror_identity = identity,
 			})

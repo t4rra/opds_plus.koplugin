@@ -150,6 +150,25 @@ function DownloadManager.getLocalDownloadPath(browser, filename, filetype, remot
 	return util.fixUtf8(filename, "_")
 end
 
+-- KOReader's Book information fields a catalog can fill in, in display order
+local SAVED_PROP_KEYS = { "title", "authors", "series", "series_index", "language", "description" }
+
+-- True when a book property is missing or blank
+local function propEmpty(value)
+	if value == nil then
+		return true
+	end
+	return type(value) == "string" and not value:find("%S")
+end
+
+-- series_index may be a number; every other field is text
+local function propPresent(value, key)
+	if type(value) == "number" then
+		return key == "series_index"
+	end
+	return type(value) == "string" and value:find("%S") ~= nil
+end
+
 -- Read the metadata KOReader shows for a book that has not been opened yet
 -- @param file string Path of the book
 -- @return table|nil Book properties, or nil if the book can't be read
@@ -175,6 +194,45 @@ local function readBookProps(file)
 	return ok and props or nil
 end
 
+-- Save a catalog's metadata for a downloaded book as KOReader custom metadata, showing in
+-- Book information. Fills in what the book is missing — its own values, and anything the
+-- reader customized, always win. A metadata-less book (e.g. a comic) gets the whole set.
+-- @param file string Path of the downloaded book
+-- @param metadata table|nil Catalog keys: title, authors, series, series_index, language, description
+-- @return boolean True if something was saved
+function DownloadManager.saveMetadata(file, metadata)
+	if type(metadata) ~= "table" then
+		return false
+	end
+	local ok, saved = pcall(function()
+		if DocSettings:findCustomMetadataFile(file) then
+			return false
+		end
+		local props = readBookProps(file)
+		if not props then
+			return false
+		end
+		local custom = {} -- the catalog fills gaps only; it never overwrites the book
+		for _, key in ipairs(SAVED_PROP_KEYS) do
+			local value = metadata[key]
+			if propPresent(value, key) and propEmpty(props[key]) then
+				custom[key] = type(value) == "string" and util.trim(value) or value
+			end
+		end
+		if next(custom) == nil then
+			return false
+		end
+		local custom_settings = DocSettings.openSettingsFile()
+		custom_settings:saveSetting("doc_props", props) -- KOReader keeps a copy of the original properties
+		custom_settings:saveSetting("custom_props", custom)
+		return custom_settings:flushCustomMetadata(file) == true
+	end)
+	if not ok then
+		logger.warn("DownloadManager:saveMetadata: could not save the metadata of", file, saved)
+	end
+	return ok and saved
+end
+
 -- Save the description a catalog gave for a book as KOReader custom book metadata, so that it shows in
 -- Book information. A description the book carries itself is kept, and so is any custom metadata.
 -- @param file string Path of the downloaded book
@@ -184,23 +242,7 @@ function DownloadManager.saveDescription(file, description)
 	if type(description) ~= "string" or not description:find("%S") then
 		return false
 	end
-	local ok, saved = pcall(function()
-		if DocSettings:findCustomMetadataFile(file) then
-			return false
-		end
-		local props = readBookProps(file)
-		if not props or (type(props.description) == "string" and props.description:find("%S")) then
-			return false
-		end
-		local custom_settings = DocSettings.openSettingsFile()
-		custom_settings:saveSetting("doc_props", props) -- KOReader keeps a copy of the original properties
-		custom_settings:saveSetting("custom_props", { description = description })
-		return custom_settings:flushCustomMetadata(file) == true
-	end)
-	if not ok then
-		logger.warn("DownloadManager:saveDescription: could not save the description of", file, saved)
-	end
-	return ok and saved
+	return DownloadManager.saveMetadata(file, { description = description })
 end
 
 -- Download a file from remote URL to local path
@@ -210,8 +252,9 @@ end
 -- @param username string|nil Optional HTTP auth username
 -- @param password string|nil Optional HTTP auth password
 -- @param caller_callback function|nil Callback function on success
--- @param options table|nil Optional extras: description (plain text from the catalog entry, saved with the book),
--- progress (function(bytes) called as the file grows)
+-- @param options table|nil Optional extras: metadata (plain-text table from the catalog entry — title, authors, series,
+-- series_index, language, description — saved with the book), description (plain text from the catalog entry, kept for
+-- queue entries written by an older release), progress (function(bytes) called as the file grows)
 -- @return boolean True if download succeeded
 function DownloadManager.downloadFile(browser, local_path, remote_url, username, password, caller_callback, options)
 	logger.dbg("Downloading file", local_path, "from", remote_url)
@@ -286,9 +329,16 @@ function DownloadManager.downloadFile(browser, local_path, remote_url, username,
 
 	if code == 200 then
 		logger.dbg("File downloaded to", local_path)
-		local save_description = not browser.settings or browser.settings.save_book_description ~= false
-		if save_description and options and options.description then
-			DownloadManager.saveDescription(local_path, options.description)
+		local save_metadata = not browser.settings or browser.settings.save_book_description ~= false
+		if save_metadata and options then
+			local metadata = options.metadata
+			if type(metadata) ~= "table" and type(options.description) == "string" then
+				-- queue entries written by an older release carry only the description
+				metadata = { description = options.description }
+			end
+			if type(metadata) == "table" then
+				DownloadManager.saveMetadata(local_path, metadata)
+			end
 		end
 		if caller_callback then
 			caller_callback(local_path)
@@ -382,7 +432,7 @@ function DownloadManager.downloadDownloadList(browser)
 			local progress = progressReporter(progress_path, index, total, name)
 			if DownloadManager.downloadFile(browser, item.file, item.url, item.username, item.password, nil,
 				{
-					description = item.info,
+					metadata = item.metadata or (item.info and { description = item.info }),
 					basic_auth_origin = item.basic_auth_origin or false,
 					progress = progress,
 				}) then
@@ -449,7 +499,7 @@ function DownloadManager.downloadPendingSyncs(browser, dl_list)
 						local progress = progressReporter(progress_path, index, total, name)
 						if DownloadManager.downloadFile(browser, item.file, item.url, item.username, item.password, nil,
 							{
-								description = item.info,
+								metadata = item.metadata or (item.info and { description = item.info }),
 								basic_auth_origin = item.catalog or false,
 								progress = progress,
 							}) then
@@ -519,7 +569,8 @@ end
 
 -- Add item to download queue
 -- @param browser table OPDSBrowser instance
--- @param download_item table Item with file, url, username, password, info, catalog
+-- @param download_item table Item with file, url, username, password, info (plain-text description,
+-- kept for the downloads list), metadata (plain-text table saved with the book), catalog
 function DownloadManager.addToDownloadQueue(browser, download_item)
 	download_item.basic_auth_origin = RequestHeaders.originKey(browser.root_catalog_url) or false
 	table.insert(browser.downloads, download_item)

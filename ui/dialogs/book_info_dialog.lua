@@ -133,6 +133,7 @@ local function showFormatSelectionDialog(browser, item, downloadable, add_to_que
 							file     = local_path,
 							url      = dl.acquisition.href,
 							info     = description,
+							metadata = CatalogUtils.getMetadata(item),
 							catalog  = browser.root_catalog_title,
 							username = browser.root_catalog_username,
 							password = browser.root_catalog_password,
@@ -140,7 +141,7 @@ local function showFormatSelectionDialog(browser, item, downloadable, add_to_que
 					else
 						DownloadManager.checkDownloadFile(browser, local_path, dl.acquisition.href,
 							browser.root_catalog_username, browser.root_catalog_password,
-							browser.file_downloaded_callback, { description = description })
+							browser.file_downloaded_callback, { metadata = CatalogUtils.getMetadata(item) })
 					end
 				end,
 			},
@@ -483,7 +484,7 @@ function BookInfoDialog.build(browser, item)
 						browser, filename, dl.filetype, dl.acquisition.href)
 					DownloadManager.checkDownloadFile(browser, local_path, dl.acquisition.href,
 						browser.root_catalog_username, browser.root_catalog_password,
-						browser.file_downloaded_callback, { description = CatalogUtils.getDescription(item) })
+						browser.file_downloaded_callback, { metadata = CatalogUtils.getMetadata(item) })
 				end,
 			})
 		else
@@ -510,6 +511,7 @@ function BookInfoDialog.build(browser, item)
 						file     = local_path,
 						url      = dl.acquisition.href,
 						info     = CatalogUtils.getDescription(item),
+						metadata = CatalogUtils.getMetadata(item),
 						catalog  = browser.root_catalog_title,
 						username = browser.root_catalog_username,
 						password = browser.root_catalog_password,

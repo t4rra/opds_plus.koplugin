@@ -274,9 +274,9 @@ This is not a limit on KOReader's total RAM use.
 - What a check sends: an update check is a request to `api.github.com` for the latest release of this repository, with the plugin version in the `User-Agent`. GitHub sees your IP address, as with any request. Nothing else is sent, and OPDS Plus has no server of its own. See [SECURITY.md](SECURITY.md).
 
 #### Downloads (New in 1.3.0)
-- **Save Description with Downloads**:
-  - Enabled (default): the description a catalog gives for a book is saved with the downloaded file, so it shows in KOReader's **Book information**. A description the book already has, or one you edited yourself, is never replaced.
-  - KOReader marks a description saved this way with its pencil icon, like any customized property. To remove it from a book, long-press the description in **Book information** and tap **Reset custom**.
+- **Save Metadata with Downloads**:
+  - Enabled (default): the metadata a catalog gives for a book is saved with the downloaded file, so it shows in KOReader's **Book information**. This is how comic books (CBZ and friends, which carry no metadata of their own) get a title, author, series, series index and language, and it fills in only the fields the book itself is missing: a title, author or description the book already has — or one you edited yourself — is never replaced. Covers single downloads, the download queue and sync.
+  - KOReader marks metadata saved this way with its pencil icon, like any customized property. To remove it from a book, long-press the property in **Book information** and tap **Reset custom**.
   - Disabled: downloaded books are left as the server delivers them.
 
 ### Sync Actions & Settings (New in 1.2.0)

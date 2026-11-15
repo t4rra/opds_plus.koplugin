@@ -655,4 +655,57 @@ describe("CatalogUtils", function()
 			end
 		end)
 	end)
+
+	describe("getMetadata", function()
+		it("returns an empty table for a table-less or empty entry", function()
+			assert.same({}, CatalogUtils.getMetadata(nil))
+			assert.same({}, CatalogUtils.getMetadata("book"))
+			assert.same({}, CatalogUtils.getMetadata({}))
+		end)
+
+		it("collects every field the entry carries as plain text", function()
+			local metadata = CatalogUtils.getMetadata({
+				title = "Dune",
+				author = "Frank Herbert, Brian Herbert",
+				series = "Dune Chronicles",
+				series_index = "2.5",
+				language = "en",
+				content = "<p>A desert planet.</p>",
+			})
+
+			assert.same({
+				title = "Dune",
+				authors = "Frank Herbert, Brian Herbert",
+				series = "Dune Chronicles",
+				series_index = 2.5,
+				language = "en",
+				description = "A desert planet.",
+			}, metadata)
+		end)
+
+		it("counts the mappers' placeholder title as missing", function()
+			assert.is_nil(CatalogUtils.getMetadata({ title = "Unknown" }).title)
+			assert.is_nil(CatalogUtils.getMetadata({ title = "  " }).title)
+		end)
+
+		it("trims, drops blank values and keeps a non-numeric series index as text", function()
+			assert.same({}, CatalogUtils.getMetadata({ title = "", author = "   ", series = "", language = "" }))
+			assert.same({ series_index = "2a" }, CatalogUtils.getMetadata({ series_index = " 2a " }))
+			assert.same({ series_index = 20 }, CatalogUtils.getMetadata({ series_index = "20.0" }))
+			assert.same({ series_index = 3 }, CatalogUtils.getMetadata({ series_index = 3 }))
+		end)
+
+		it("drops the matching SERIES line from the description, as the rest of the plugin does", function()
+			local metadata = CatalogUtils.getMetadata({
+				series = "Dune",
+				series_index = "3",
+				content = "SERIES: Dune [3]<br />A desert planet.",
+			})
+			assert.equals("A desert planet.", metadata.description)
+		end)
+
+		it("leaves the description out when the entry has none", function()
+			assert.is_nil(CatalogUtils.getMetadata({ title = "Dune" }).description)
+		end)
+	end)
 end)

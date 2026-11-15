@@ -86,7 +86,7 @@ function DownloadDialogBuilder.buildDownloadDialog(browser, item, filename, crea
 							browser, filename, filetype, acquisition.href)
 						DownloadManager.checkDownloadFile(browser, local_path, acquisition.href,
 							browser.root_catalog_username, browser.root_catalog_password,
-							browser.file_downloaded_callback, { description = CatalogUtils.getDescription(item) })
+							browser.file_downloaded_callback, { metadata = CatalogUtils.getMetadata(item) })
 					end,
 					hold_callback = function()
 						UIManager:close(browser.download_dialog)
@@ -96,6 +96,7 @@ function DownloadDialogBuilder.buildDownloadDialog(browser, item, filename, crea
 							file     = local_path,
 							url      = acquisition.href,
 							info     = CatalogUtils.getDescription(item),
+							metadata = CatalogUtils.getMetadata(item),
 							catalog  = browser.root_catalog_title,
 							username = browser.root_catalog_username,
 							password = browser.root_catalog_password,
@@ -279,7 +280,8 @@ function DownloadDialogBuilder.buildDownloadListItemDialog(download_list_browser
 					end
 					NetworkMgr:runWhenConnected(function()
 						DownloadManager.checkDownloadFile(download_list_browser._manager, dl_item.file, dl_item.url,
-							dl_item.username, dl_item.password, file_downloaded_callback, { description = dl_item.info })
+							dl_item.username, dl_item.password, file_downloaded_callback,
+							{ metadata = dl_item.metadata or (dl_item.info and { description = dl_item.info }) })
 					end)
 				end,
 			},
