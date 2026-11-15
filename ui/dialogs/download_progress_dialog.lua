@@ -1,6 +1,4 @@
--- Live progress dialog for downloads: current book, MB so far, books left in the batch.
--- With no known total size the byte count is shown as text, not a bar.
--- Tapping cancels when used as a trap widget (Trapper installs dismiss_callback itself).
+-- Live progress dialog for downloads
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Font = require("ui/font")
@@ -9,7 +7,7 @@ local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local Size = require("ui/size")
-local TextWidget = require("ui/widget/textwidget")
+local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local Screen = Device.screen
@@ -34,6 +32,10 @@ local function statusText(bytes, index, total)
 	return size
 end
 
+local function titleText(title)
+	return title or _("Downloading…")
+end
+
 function DownloadProgressDialog:init()
 	self.dimen = Screen:getSize()
 
@@ -53,19 +55,24 @@ function DownloadProgressDialog:init()
 
 	local width = Screen:getWidth() - Screen:scaleBySize(80)
 	self.text_max_width = width
-	local title_face = Font:getFace("ffont")
-	self.title_face = title_face
-	-- TextWidget does not clip, so truncate by hand or long titles run off small screens
-	self.title_widget = TextWidget:new {
-		text = UIUtils.truncateText(self.title or _("Downloading…"), title_face, width),
-		face = title_face,
+	local big_face = Font:getFace("ffont")
+	local small_face = Font:getFace("smallffont")
+	self.small_face = small_face
+	self.big_face = big_face
+	-- Fixed-width lines
+	-- TextBoxWidget does not clip, so truncate by hand
+	self.stats_widget = TextBoxWidget:new {
+		text = statusText(0, nil, nil),
+		face = big_face,
 		bold = true,
-		max_width = width,
+		width = width,
+		alignment = "center",
 	}
-	self.subtitle_widget = TextWidget:new {
-		text = "",
-		face = Font:getFace("smallffont"),
-		max_width = width,
+	self.title_widget = TextBoxWidget:new {
+		text = UIUtils.truncateText(titleText(self.title), small_face, width),
+		face = small_face,
+		alignment = "center",
+		width = width,
 	}
 
 	self[1] = FrameContainer:new {
@@ -74,8 +81,9 @@ function DownloadProgressDialog:init()
 		padding = Size.padding.large,
 		background = Blitbuffer.COLOR_WHITE,
 		VerticalGroup:new {
+			align = "center",
+			self.stats_widget,
 			self.title_widget,
-			self.subtitle_widget,
 		},
 	}
 end
@@ -89,16 +97,21 @@ function DownloadProgressDialog:repaint()
 	UIManager:forceRePaint()
 end
 
+-- nothing repaints what is underneath when this window closes; force it or the frame border lingers on e-ink
+function DownloadProgressDialog:onCloseWidget()
+	UIManager:setDirty(nil, "ui")
+end
+
 -- show a different book; the byte counter restarts from zero
 function DownloadProgressDialog:setBook(title, index, total)
 	if self.book == title and self.index == index and self.total == total then return end
 	self.book, self.index, self.total = title, index, total
-	self.title_widget:setText(UIUtils.truncateText(title or _("Downloading…"), self.title_face, self.text_max_width))
+	self.title_widget:setText(UIUtils.truncateText(titleText(title), self.small_face, self.text_max_width))
 	self:reportBytes(0)
 end
 
 function DownloadProgressDialog:reportBytes(bytes)
-	self.subtitle_widget:setText(statusText(bytes, self.index, self.total))
+	self.stats_widget:setText(UIUtils.truncateText(statusText(bytes, self.index, self.total), self.big_face, self.text_max_width))
 	self:repaint()
 end
 
