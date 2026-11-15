@@ -19,8 +19,8 @@ OPDS Plus needs KOReader v2025.10 or later.
    The [KOReader wiki](https://github.com/koreader/koreader/wiki#installationupgrading) has the details for
    every platform.
 3. Restart KOReader.
-4. In the File Browser, open the top menu: **OPDS Plus Catalog** is in it. KOReader may show it as
-   **NEW: OPDS Plus Catalog** until you sort it into a menu of your own.
+4. In the File Browser, open the top menu. **OPDS Plus Catalog** is in the search menu (the 🔍 tab),
+   below **OPDS catalog**.
 
 Once installed, later versions can be installed from within KOReader: see [Updating](Updating).
 

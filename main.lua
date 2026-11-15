@@ -254,6 +254,8 @@ function OPDS:addToMainMenu(menu_items)
     if not self.ui.document then -- FileManager menu only
         menu_items.opdsplus = {
             text = _("OPDS Plus Catalog"),
+            -- Put in search tab
+            sorting_hint = "search",
             sub_item_table = SettingsMenu.create(self)
         }
     end

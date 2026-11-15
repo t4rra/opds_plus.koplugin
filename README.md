@@ -118,7 +118,7 @@ The screenshots come from a mock catalog of public-domain classics with generate
 4. **Verify installation**:
    - Open KOReader's File Browser
    - Tap the menu icon (⋮ or ≡)
-   - You should see "OPDS Plus Catalog" in the menu (KOReader may show it as "NEW: OPDS Plus Catalog" until you sort it into a menu)
+   - You should see "OPDS Plus Catalog" in the search menu (🔍 tab), below "OPDS catalog"
 
 ### Method 2: Git Clone (For Developers)
 
