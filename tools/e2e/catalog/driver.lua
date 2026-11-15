@@ -75,9 +75,13 @@ local current = "init"
 local toasts = {}
 local orig_show = UIManager.show
 UIManager.show = function(self, widget, ...)
-    if type(widget) == "table" and type(widget.text) == "string" and widget.text ~= "" then
-        toasts[#toasts + 1] = widget.text
-        emit(current .. ".toast", widget.text)
+    if type(widget) == "table" then
+        local message = type(widget.text) == "string" and widget.text ~= "" and widget.text
+            or (type(widget.title) == "string" and widget.title ~= "" and widget.title)
+        if message then
+            toasts[#toasts + 1] = message
+            emit(current .. ".toast", message)
+        end
     end
     return orig_show(self, widget, ...)
 end
@@ -491,18 +495,25 @@ local function close_browser(p)
     end
 end
 
+local function window_message(widget)
+    if type(widget) ~= "table" then return nil end
+    if type(widget.text) == "string" then return widget.text end
+    if type(widget.title) == "string" then return widget.title end
+    return nil
+end
+
 local function close_window_with_text(fragment)
     for i = #UIManager._window_stack, 1, -1 do
         local widget = UIManager._window_stack[i].widget
-        local text = type(widget) == "table" and widget.text
-        if type(text) == "string" and text:find(fragment, 1, true) then UIManager:close(widget) end
+        local text = window_message(widget)
+        if text and text:find(fragment, 1, true) then UIManager:close(widget) end
     end
 end
 
 local function window_has_text(fragment)
     for _, entry in ipairs(UIManager._window_stack) do
-        local text = type(entry.widget) == "table" and entry.widget.text
-        if type(text) == "string" and text:find(fragment, 1, true) then return true end
+        local text = window_message(entry.widget)
+        if text and text:find(fragment, 1, true) then return true end
     end
     return false
 end

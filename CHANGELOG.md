@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ### Changed
 
 - **One Sync Summary**: One dialog at the end of a sync, instead of stacked popups, with counts of books added, removed by Mirror Sync, not downloaded and already on the device (no file names). Duplicate files keep their Do nothing / Overwrite / Download copies actions inside the same dialog.
+- **Compact Sync Summary**: The end-of-sync report now appears as a small notice (a small button dialog only when duplicates need a decision) instead of a full-screen viewer.
 - **Sync Queue Cleanup**: Books of catalogs no longer flagged for sync are dropped from the persisted sync queue, duplicate queue entries for the same book are dropped (newest wins), and mirror manifests of catalogs no longer set to Mirror are forgotten (files untouched).
 
 ## [1.6.0] - 2026-11-11

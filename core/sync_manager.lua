@@ -2,10 +2,10 @@
 -- Handles catalog synchronization, sync settings, and batch downloads
 
 local Device = require("device")
+local ButtonDialog = require("ui/widget/buttondialog")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local SpinWidget = require("ui/widget/spinwidget")
-local TextViewer = require("ui/widget/textviewer")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
 local lfs = require("libs/libkoreader-lfs")
@@ -595,20 +595,20 @@ function SyncManager.showSyncSummary(browser, sync_error)
 				{
 					text = _("Do nothing"),
 					callback = function()
-						viewer:onClose()
+						UIManager:close(viewer)
 					end,
 				},
 				{
 					text = _("Overwrite"),
 					callback = function()
-						viewer:onClose()
+						UIManager:close(viewer)
 						redownload()
 					end,
 				},
 				{
 					text = _("Download copies"),
 					callback = function()
-						viewer:onClose()
+						UIManager:close(viewer)
 						local original_dir = util.splitFilePathName(duplicates[1].file)
 						local copy_download_dir = original_dir .. "copies" .. "/"
 						util.makePath(copy_download_dir)
@@ -621,11 +621,17 @@ function SyncManager.showSyncSummary(browser, sync_error)
 			},
 		}
 	end
-	viewer = TextViewer:new {
-		title = sync_error and _("Sync failed") or _("Sync complete"),
-		text = table.concat(lines, "\n"),
-		buttons_table = buttons_table,
-	}
+	local content = table.concat(lines, "\n")
+	if buttons_table then
+		viewer = ButtonDialog:new {
+			title = content,
+			buttons = buttons_table,
+		}
+	else
+		viewer = InfoMessage:new {
+			text = content,
+		}
+	end
 	UIManager:show(viewer)
 	return viewer
 end
