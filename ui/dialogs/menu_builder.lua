@@ -288,7 +288,7 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 	-- Edited here and only kept when the catalog is saved
 	local headers = RequestHeaders.copy(item and item.headers) or {}
 
-	local dialog, check_button_raw_names, check_button_sync_catalog, check_button_stream_sync
+	local dialog, check_button_raw_names, check_button_sync_catalog, check_button_mirror_sync, check_button_stream_sync
 
 	-- Kept short: it shares the row with Cancel and Save, and a longer label is cut off once a count is added
 	local function headersButtonText()
@@ -390,6 +390,7 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 						new_fields[6] = check_button_sync_catalog.checked or nil
 						new_fields[7] = headers
 						new_fields[8] = check_button_stream_sync.checked or nil
+						new_fields[9] = check_button_mirror_sync.checked or nil
 						local function save()
 							browser:editCatalogFromInput(new_fields, item)
 							UIManager:close(dialog)
@@ -418,6 +419,11 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 		checked = item and item.sync,
 		parent = dialog,
 	}
+	check_button_mirror_sync = CheckButton:new {
+		text = _("Mirror Sync"),
+		checked = item and item.mirror == true,
+		parent = dialog,
+	}
 	check_button_stream_sync = CheckButton:new {
 		text = _("Sync streaming progress"),
 		checked = item and item.stream_sync == true,
@@ -425,6 +431,7 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 	}
 	dialog:addWidget(check_button_raw_names)
 	dialog:addWidget(check_button_sync_catalog)
+	dialog:addWidget(check_button_mirror_sync)
 	dialog:addWidget(check_button_stream_sync)
 
 	return dialog

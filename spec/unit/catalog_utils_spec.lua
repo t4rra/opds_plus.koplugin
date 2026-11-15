@@ -65,6 +65,16 @@ describe("CatalogUtils", function()
 			assert.equals("\u{f46a} ", entry.mandatory)
 		end)
 
+		it("shows a sync icon for a catalog that only mirrors", function()
+			local entry = CatalogUtils.buildRootEntry({ title = "t", url = "u", mirror = true })
+			assert.equals("\u{f46a} ", entry.mandatory)
+		end)
+
+		it("passes the mirror flag into the root entry table", function()
+			local entry = CatalogUtils.buildRootEntry({ title = "t", url = "u", mirror = true })
+			assert.is_true(entry.mirror)
+		end)
+
 		it("shows the sync icon before the lock when a catalog has both", function()
 			local entry = CatalogUtils.buildRootEntry({ title = "t", url = "u", username = "ann", sync = true })
 			assert.equals("\u{f46a} \u{f2c0}", entry.mandatory)

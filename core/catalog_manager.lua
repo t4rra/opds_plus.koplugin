@@ -29,7 +29,8 @@ end
 -- @param servers table List of server configurations
 -- @param item_table table Current item table
 -- @param fields table Input fields: [1]=title, [2]=url, [3]=username, [4]=password, [5]=raw_names, [6]=sync,
--- [7]=custom HTTP headers (a list of { name, value }, copied; none when empty or nil), [8]=stream progress sync
+-- [7]=custom HTTP headers (a list of { name, value }, copied; none when empty or nil), [8]=stream progress sync,
+-- [9]=mirror sync
 -- @param item table|nil Existing item to update (nil for new)
 -- @param no_refresh boolean Don't refresh item table if true
 -- @return number, number New index, item number for refresh
@@ -44,6 +45,7 @@ function CatalogManager.editCatalogFromInput(servers, item_table, fields, item, 
 		sync      = fields[6],
 		headers   = headers and #headers > 0 and headers or nil,
 		stream_sync = fields[8] == true or nil,
+		mirror = fields[9] == true or nil,
 	}
 
 	local new_item = CatalogUtils.buildRootEntry(new_server)
@@ -196,13 +198,13 @@ function CatalogManager.validateCatalogUrl(catalog_url)
 	return true, catalog_url
 end
 
--- Get list of catalogs with sync enabled
+-- Get list of catalogs with sync or mirror sync enabled
 -- @param servers table List of server configurations
 -- @return table List of sync-enabled catalogs
 function CatalogManager.getSyncEnabledCatalogs(servers)
 	local sync_catalogs = {}
 	for _, server in ipairs(servers) do
-		if server.sync then
+		if server.sync or server.mirror then
 			table.insert(sync_catalogs, server)
 		end
 	end
@@ -234,6 +236,7 @@ function CatalogManager.exportCatalogs(servers, include_credentials)
 			url = server.url,
 			raw_names = server.raw_names,
 			sync = server.sync,
+			mirror = server.mirror,
 		}
 
 		if include_credentials then
@@ -279,6 +282,7 @@ function CatalogManager.importCatalogs(servers, import_data, merge_duplicates)
 					password = catalog.password,
 					raw_names = catalog.raw_names,
 					sync = catalog.sync,
+					mirror = catalog.mirror,
 				})
 				imported = imported + 1
 			end
@@ -305,7 +309,7 @@ function CatalogManager.getCatalogStats(servers)
 		if server.username then
 			stats.with_auth = stats.with_auth + 1
 		end
-		if server.sync then
+		if server.sync or server.mirror then
 			stats.with_sync = stats.with_sync + 1
 		end
 		if server.url and server.url:match("%%s") then
@@ -366,6 +370,7 @@ function CatalogManager.duplicateCatalog(server, new_title)
 		password = server.password,
 		raw_names = server.raw_names,
 		sync = server.sync,
+		mirror = server.mirror,
 		headers = headers and #headers > 0 and headers or nil,
 		last_download = nil, -- Don't copy sync state
 	}

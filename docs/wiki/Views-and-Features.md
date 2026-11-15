@@ -105,7 +105,8 @@ one `Name: value` per line.
 
 ## Sync
 
-Sync downloads new books from the catalogs that have **Sync catalog** ticked in their **Edit** dialog.
+Sync downloads new books from the catalogs that have **Sync catalog** ticked in their **Edit** dialog (or
+**Mirror Sync**, see below).
 
 1. In the menu at the top left of the list of catalogs, tap **Set sync folder** (sync needs one), and optionally
    **Set max number of files to sync** and **Set file types to sync**.
@@ -114,6 +115,28 @@ Sync downloads new books from the catalogs that have **Sync catalog** ticked in 
 
 Both actions are also in KOReader's gesture manager as **OPDS Plus: Sync all catalogs** and **OPDS Plus: Force
 sync all catalogs**.
+
+**Mirror Sync**: In a catalog's **Edit** dialog there is a **Mirror Sync** checkbox, below **Sync catalog**.
+Ticking it implies the catalog is synced. Mirror Sync makes the sync folder a true mirror of the catalog: the
+plugin tracks the books it downloaded for that catalog, and whenever the catalog no longer lists one, the tracked
+local file is deleted during the next sync.
+
+Mirroring is not matched by file name. The plugin records which local file came from which catalog entry — the
+entry's `<id>` when the catalog gives one, otherwise its download link — in a manifest named
+`.opds_plus_mirror.lua`, kept inside the sync folder, so renamed files and duplicate titles are handled correctly.
+
+A few safety rules apply:
+
+- Only files downloaded by OPDS Plus for that catalog are ever deleted. Any other file in the folder is left
+  alone.
+- If the catalog feed cannot be fully read (a network error, an empty page mid-feed, or an empty feed), no local
+  files are deleted. The folder is left as it is and a message says so.
+- **Set file types to sync** applies to both downloads and deletions: a type you filter out is not mirrored.
+- **Set max number of files to sync** caps how many new books are downloaded per sync, but deletion decisions
+  consider the whole feed.
+- Books that were deleted manually on the device are downloaded again. That is what mirroring means.
+- Turning Mirror Sync off does not delete anything. It just stops mirroring; existing files stay.
+- Only the book file is removed. KOReader's `.sdr` sidecar folder (the reading progress for that file) is kept.
 
 This is separate from the default-off **Sync streaming progress** setting, which synchronizes page positions
 for supported Kavita/Komga streams. See the [streaming guide](Kavita#two-way-streaming-progress) for consent,
@@ -128,6 +151,8 @@ goes up one level (and closes the browser at the top), and **Home** closes the b
 
 - Settings, catalogs (with their passwords and headers) and download history: `<KOReader folder>/settings/opdsplus.lua`.
 - Cached covers: `<KOReader folder>/cache/opds_plus/`.
+- Mirror Sync manifest (which downloaded file came from which catalog entry): `<sync folder>/.opds_plus_mirror.lua`.
 
-KOReader's plugin manager can remove both (**Disable plugin and delete settings** or **Delete plugin and
-settings**). Downloaded books are never deleted.
+KOReader's plugin manager can remove the first two (**Disable plugin and delete settings** or **Delete plugin
+and settings**). Downloaded books are never deleted, except by a catalog with **Mirror Sync** ticked, which
+removes only the files the plugin downloaded for it and the catalog no longer lists.

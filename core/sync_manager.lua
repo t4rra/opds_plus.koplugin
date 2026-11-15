@@ -8,6 +8,7 @@ local SpinWidget = require("ui/widget/spinwidget")
 local TextViewer = require("ui/widget/textviewer")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
+local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 local util = require("util")
 local _ = require("gettext")
@@ -15,6 +16,7 @@ local T = require("ffi/util").template
 
 local Constants = require("models.constants")
 local DownloadManager = require("core.download_manager")
+local MirrorSync = require("core.mirror_sync")
 local StateManager = require("core.state_manager")
 local CatalogUtils = require("utils.catalog_utils")
 
@@ -137,7 +139,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 		servers_to_sync[1] = browser.servers[server_idx - 1]
 	else
 		for _, server in ipairs(browser.servers) do
-			if server.sync then
+			if server.sync or server.mirror then
 				table.insert(servers_to_sync, server)
 			end
 		end
@@ -151,6 +153,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 	end
 
 	browser.sync = true
+	browser.mirror_results = {}
 	local info = InfoMessage:new {
 		text = _("Synchronizing lists…"),
 	}
@@ -172,6 +175,8 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 		UIManager:show(InfoMessage:new {
 			text = T(_("Sync failed:\n%1"), tostring(err)),
 		})
+		-- failed sync may still have deleted files first
+		SyncManager.reportMirrorResults(browser)
 		return
 	end
 
@@ -184,6 +189,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 			text = _("Up to date!"),
 		})
 	end
+	SyncManager.reportMirrorResults(browser)
 end
 
 --- Fill pending syncs list for a specific server
@@ -201,6 +207,11 @@ function SyncManager.fillPendingSyncs(browser, server)
 	browser.sync_max_dl            = browser.settings.sync_max_dl or Constants.SYNC.DEFAULT_MAX_DOWNLOADS
 
 	local file_list                = SyncManager.parseFiletypes(browser.settings.filetypes)
+	if server.mirror then
+		SyncManager.fillMirrorPendingSyncs(browser, server, file_list)
+		browser.sync_server_list[server.url] = true
+		return
+	end
 	local new_last_download        = nil
 	local dl_count                 = 1
 
@@ -253,6 +264,67 @@ function SyncManager.fillPendingSyncs(browser, server)
 		logger.dbg("Updating opds last download for server", server.title, "to", new_last_download)
 		browser:updateFieldInCatalog(server, "last_download", new_last_download)
 	end
+end
+
+--- fill mirror pending syncs: sync folder ends up holding the feed's books
+-- never updates last_download; deletes only our own files whose entries left the feed
+-- @param browser table OPDSBrowser instance
+-- @param server table Server configuration
+-- @param file_list table|nil allowed filetypes lookup, or nil for every type
+function SyncManager.fillMirrorPendingSyncs(browser, server, file_list)
+	local sync_dir = browser.settings.sync_dir
+	local max_dl = browser.sync_max_dl or Constants.SYNC.DEFAULT_MAX_DOWNLOADS
+	local manifest = MirrorSync.load(sync_dir)
+	browser.mirror_results = browser.mirror_results or {}
+	local desired_map, order, complete = MirrorSync.enumerate(browser, server.url)
+
+	-- filetype filter; remember target paths in feed order
+	local full = {}        -- identity -> { entry =, link =, file = }
+	local desired = {}     -- identity -> true (filetype filter included)
+	for _, identity in ipairs(order) do
+		local d = desired_map[identity]
+		local filetype = DownloadManager.getFiletype(d.link)
+		if filetype and (not file_list or file_list[filetype:lower()]) then
+			local filename = browser:getFileName(d.entry)
+			local target = browser:getLocalDownloadPath(filename, filetype, d.link.href)
+			full[identity] = { entry = d.entry, link = d.link, file = target }
+			desired[identity] = true
+		end
+	end
+
+	-- delete only when the whole feed enumerated
+	local result
+	if complete then
+		result = MirrorSync.reconcile(sync_dir, manifest, server.url, desired)
+		MirrorSync.save(sync_dir, manifest)
+	else
+		result = { deleted = {}, failed = {}, skipped = "incomplete" }
+	end
+
+	-- download in feed order, capped by max_dl, skip existing files
+	local dl_count = 1
+	for _, identity in ipairs(order) do
+		local d = full[identity]
+		if d and not lfs.attributes(d.file, "mode") and dl_count <= max_dl then
+			table.insert(browser.pending_syncs, {
+				file = d.file,
+				url = d.link.href,
+				username = browser.root_catalog_username,
+				password = browser.root_catalog_password,
+				catalog = server.url,
+				info = CatalogUtils.getDescription(d.entry),
+				mirror = true,
+				mirror_identity = identity,
+			})
+			dl_count = dl_count + 1
+		end
+	end
+
+	browser.mirror_results[server.url] = {
+		deleted = result.deleted or {},
+		failed = result.failed or {},
+		skipped = result.skipped,
+	}
 end
 
 --- Get list of books to download for sync
@@ -338,11 +410,81 @@ end
 -- @param browser table OPDSBrowser instance
 function SyncManager.downloadPendingSyncs(browser)
 	local dl_list = browser.pending_syncs
+	local before = {}
+	for _, item in ipairs(dl_list) do before[item] = true end
 	local duplicate_list = DownloadManager.downloadPendingSyncs(browser, dl_list)
+	SyncManager.trackMirrorDownloads(browser, dl_list, before)
 
 	if duplicate_list and #duplicate_list > 0 then
 		SyncManager.showDuplicateFilesDialog(browser, dl_list, duplicate_list)
 	end
+end
+
+--- adopt mirror items that left the queue (i.e. downloaded) into the manifest
+-- @param browser table OPDSBrowser instance
+-- @param dl_list table items after the download (mutated in place)
+-- @param before table set (item -> true) of items pending before the download
+function SyncManager.trackMirrorDownloads(browser, dl_list, before)
+	local sync_dir = browser.settings and browser.settings.sync_dir
+	if not sync_dir then return end
+	local still = {}
+	for _, item in ipairs(dl_list) do still[item] = true end
+	local succeeded = {}
+	for item in pairs(before) do
+		if item.mirror and not still[item] then
+			succeeded[#succeeded + 1] = item
+		end
+	end
+	if #succeeded == 0 then return end
+	local by_catalog = {}
+	for _, item in ipairs(succeeded) do
+		by_catalog[item.catalog] = by_catalog[item.catalog] or {}
+		table.insert(by_catalog[item.catalog], item)
+	end
+	local manifest = MirrorSync.load(sync_dir)
+	for catalog_url, items in pairs(by_catalog) do
+		MirrorSync.trackDownloads(manifest, sync_dir, catalog_url, items)
+	end
+	MirrorSync.save(sync_dir, manifest)
+end
+
+--- report mirror deletions; resets per-run results
+-- @param browser table OPDSBrowser instance
+function SyncManager.reportMirrorResults(browser)
+	local results = browser.mirror_results
+	browser.mirror_results = {}
+	if type(results) ~= "table" then
+		return
+	end
+	local deleted, failed = 0, 0
+	local incomplete, empty = false, false
+	for _, result in pairs(results) do
+		if type(result) == "table" then
+			deleted = deleted + (result.deleted and #result.deleted or 0)
+			failed = failed + (result.failed and #result.failed or 0)
+			if result.skipped == "incomplete" then incomplete = true end
+			if result.skipped == "empty" then empty = true end
+		end
+	end
+	local lines = {}
+	if deleted > 0 then
+		table.insert(lines, T(_("Mirror sync: removed %1 book(s) that are no longer in the catalog."), deleted))
+	end
+	if incomplete then
+		table.insert(lines, _("Mirror sync: the catalog feed could not be fully read; no local files were deleted."))
+	end
+	if empty then
+		table.insert(lines, _("Mirror sync: the catalog feed is empty; no local files were deleted."))
+	end
+	if failed > 0 then
+		table.insert(lines, T(_("Mirror sync: %1 file(s) could not be deleted."), failed))
+	end
+	if #lines == 0 then
+		return
+	end
+	UIManager:show(InfoMessage:new {
+		text = table.concat(lines, "\n"),
+	})
 end
 
 --- Show dialog for handling duplicate files during sync

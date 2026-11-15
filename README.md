@@ -284,7 +284,8 @@ This is not a limit on KOReader's total RAM use.
 - **Direct Sync Actions**:
   - Sync all catalogs
   - Force sync all catalogs
-  - Both only cover catalogs with **Sync catalog** ticked: long-press a catalog, tap **Edit** and tick it.
+  - Both only cover catalogs with **Sync catalog** or **Mirror Sync** ticked: long-press a catalog, tap **Edit** and tick them.
+  - **Mirror Sync** (same **Edit** dialog, below **Sync catalog**) makes the sync folder a true mirror of the catalog: books removed from the catalog on the server are deleted locally on the next sync. Only files downloaded by the plugin for that catalog are deleted, tracked through a `.opds_plus_mirror.lua` manifest in the sync folder (keyed by catalog entry, not file name), and an unreadable or empty feed deletes nothing.
 - **Gesture Integration**:
   - Actions are registered in KOReader's dispatcher as:
     - `OPDS Plus: Sync all catalogs`
@@ -436,7 +437,7 @@ This file contains:
 - Update settings: whether to check weekly, when the last check was, and a skipped version
 - Local page-stream positions and synchronization baselines, without API tokens
 
-Cached covers are stored in `<KOReader data dir>/cache/opds_plus/`. To remove both, use KOReader's plugin manager and choose **Disable plugin and delete settings** or **Delete plugin and settings**. Downloaded books are never deleted.
+Cached covers are stored in `<KOReader data dir>/cache/opds_plus/`. If a catalog has **Mirror Sync** ticked, a `.opds_plus_mirror.lua` manifest in the sync folder tracks which downloaded file came from which catalog entry, so server-side removals can be mirrored locally. To remove the settings and cache, use KOReader's plugin manager and choose **Disable plugin and delete settings** or **Delete plugin and settings**. Downloaded books are never deleted, except by a catalog with **Mirror Sync** ticked, which removes only the files the plugin downloaded for it and the catalog no longer lists.
 
 ## 🤝 Contributing
 

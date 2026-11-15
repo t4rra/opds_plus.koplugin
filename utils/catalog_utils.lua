@@ -17,7 +17,7 @@ function CatalogUtils.buildRootEntry(server)
 	if server.username then
 		icons = "\u{f2c0}" -- Lock icon for authenticated catalogs
 	end
-	if server.sync then
+	if server.sync or server.mirror then
 		icons = "\u{f46a} " .. icons -- Sync icon
 	end
 	return {
@@ -30,6 +30,7 @@ function CatalogUtils.buildRootEntry(server)
 		headers    = server.headers,
 		searchable = server.url and server.url:match("%%s") and true or false,
 		sync       = server.sync,
+		mirror     = server.mirror,
 		stream_sync = server.stream_sync,
 	}
 end

@@ -7,8 +7,7 @@ describe("CatalogManager", function()
 		return text
 	end
 
-	-- The fields of the add/edit dialog, in dialog order: title, URL, username, password, raw names, sync and
-	-- custom headers. An unchecked box is nil, as in the dialog.
+	-- dialog field order: title, url, username, password, raw names, sync, headers, stream sync, mirror; unchecked = nil
 	local function dialogFields(overrides)
 		local values = { "Shelf", "https://example.org/opds", "", "" }
 		for index, value in pairs(overrides or {}) do
@@ -129,6 +128,19 @@ describe("CatalogManager", function()
 			assert.is_nil(servers[2].stream_sync)
 		end)
 
+		it("keeps mirror sync off unless explicitly enabled, independently of download sync", function()
+			local servers, menu = library({})
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields({ [6] = true }))
+			assert.is_nil(servers[1].mirror)
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields({ [9] = true }))
+			assert.is_true(servers[2].mirror)
+			assert.is_true(menu[3].mirror)
+			assert.is_nil(servers[2].sync)
+			menu[3].idx = 3
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields(), menu[3])
+			assert.is_nil(servers[2].mirror)
+		end)
+
 		it("appends the catalog to the list and to the menu", function()
 			local servers, menu = library({ { title = "Old", url = "http://old.example/opds" } })
 
@@ -181,6 +193,8 @@ describe("CatalogManager", function()
 				true,
 				true,
 				{ { name = "X-Token", value = "abc" } },
+				true,
+				true,
 			}))
 
 			assert.same({
@@ -191,6 +205,8 @@ describe("CatalogManager", function()
 				raw_names = true,
 				sync = true,
 				headers = { { name = "X-Token", value = "abc" } },
+				stream_sync = true,
+				mirror = true,
 			}, servers[1])
 		end)
 
@@ -395,6 +411,39 @@ describe("CatalogManager", function()
 
 			assert.same({ title = "B", url = "http://b.example/opds" }, servers[2])
 			assert.equals("", menu[3].mandatory)
+		end)
+
+		it("clears mirror sync when the dialog has it unchecked", function()
+			b.mirror = true
+
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields(), menu[3])
+
+			assert.is_nil(servers[2].mirror)
+		end)
+
+		it("enables mirror sync when the dialog has it checked", function()
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields({ [9] = true }), menu[3])
+
+			assert.is_true(servers[2].mirror)
+			assert.is_true(menu[3].mirror)
+		end)
+
+		it("does not make an edited catalog the default one when mirror sync is enabled", function()
+			b.is_default = nil
+
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields({ [9] = true }), menu[3])
+
+			assert.is_true(servers[2].mirror)
+			assert.is_nil(servers[2].is_default)
+		end)
+
+		it("keeps the catalog the default one when mirror sync is enabled", function()
+			b.is_default = true
+
+			CatalogManager.editCatalogFromInput(servers, menu, dialogFields({ [9] = true }), menu[3])
+
+			assert.is_true(servers[2].is_default)
+			assert.is_true(servers[2].mirror)
 		end)
 
 		it("keeps the catalog the default one", function()
@@ -804,6 +853,18 @@ describe("CatalogManager", function()
 		it("returns an empty list when no catalog syncs", function()
 			assert.same({}, CatalogManager.getSyncEnabledCatalogs({ { title = "A" } }))
 		end)
+
+		it("also lists the catalogs with mirror sync turned on, in order", function()
+			local servers = {
+				{ title = "A", mirror = true },
+				{ title = "B", sync = false },
+				{ title = "C" },
+				{ title = "D", sync = true },
+				{ title = "E", mirror = true },
+			}
+
+			assert.same({ "A", "D", "E" }, pluck(CatalogManager.getSyncEnabledCatalogs(servers), "title"))
+		end)
 	end)
 
 	describe("getAuthenticatedCatalogs", function()
@@ -836,6 +897,16 @@ describe("CatalogManager", function()
 
 		it("counts nothing for an empty list", function()
 			assert.same({ total = 0, with_auth = 0, with_sync = 0, searchable = 0 }, CatalogManager.getCatalogStats({}))
+		end)
+
+		it("counts mirror sync catalogs as syncing catalogs", function()
+			local stats = CatalogManager.getCatalogStats({
+				{ title = "A", url = "https://a.example/opds", mirror = true },
+				{ title = "B", url = "https://b.example/opds", sync = true, mirror = true },
+				{ title = "C", url = "https://c.example/opds" },
+			})
+
+			assert.equals(2, stats.with_sync)
 		end)
 
 		it("does not count a percent-encoded %25s as a search placeholder", function()
@@ -877,6 +948,7 @@ describe("CatalogManager", function()
 					password = "secret",
 					raw_names = true,
 					sync = true,
+					mirror = true,
 					last_download = "http://a.example/book/9",
 					is_default = true,
 				},
@@ -886,7 +958,7 @@ describe("CatalogManager", function()
 
 		it("exports the title, URL and options without credentials, sync state or default flag", function()
 			assert.same({
-				{ title = "A", url = "http://a.example/opds", raw_names = true, sync = true },
+				{ title = "A", url = "http://a.example/opds", raw_names = true, sync = true, mirror = true },
 				{ title = "B", url = "http://b.example/opds" },
 			}, CatalogManager.exportCatalogs(catalogs()))
 		end)
@@ -901,6 +973,7 @@ describe("CatalogManager", function()
 				password = "secret",
 				raw_names = true,
 				sync = true,
+				mirror = true,
 			}, exported[1])
 		end)
 
@@ -930,6 +1003,7 @@ describe("CatalogManager", function()
 					password = "secret",
 					raw_names = true,
 					sync = true,
+					mirror = true,
 				},
 			})
 
@@ -943,6 +1017,7 @@ describe("CatalogManager", function()
 				password = "secret",
 				raw_names = true,
 				sync = true,
+				mirror = true,
 			}, servers[3])
 		end)
 
@@ -1009,7 +1084,7 @@ describe("CatalogManager", function()
 
 		it("restores what exportCatalogs exported with credentials", function()
 			local original = {
-				{ title = "A", url = "http://a.example/opds", username = "me", password = "secret", raw_names = true, sync = true },
+				{ title = "A", url = "http://a.example/opds", username = "me", password = "secret", raw_names = true, sync = true, mirror = true },
 				{ title = "B", url = "http://b.example/opds" },
 			}
 			local restored = {}
@@ -1093,6 +1168,7 @@ describe("CatalogManager", function()
 				password = "secret",
 				raw_names = true,
 				sync = true,
+				mirror = true,
 				last_download = "https://example.org/book/9",
 				is_default = true,
 			}
@@ -1106,6 +1182,7 @@ describe("CatalogManager", function()
 				password = "secret",
 				raw_names = true,
 				sync = true,
+				mirror = true,
 			}, CatalogManager.duplicateCatalog(original()))
 		end)
 
