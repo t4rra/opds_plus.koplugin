@@ -1,5 +1,4 @@
--- Download Manager for OPDS Browser
--- Handles all file download operations, queuing, and progress tracking
+-- Download Manager for OPDS Browser: file downloads, queuing and progress tracking
 
 local BD = require("ui/bidi")
 local ConfirmBox = require("ui/widget/confirmbox")
@@ -56,7 +55,7 @@ local function basename(file)
 end
 
 -- Build the progress callback for one item: announce the book, then throttle byte writes.
--- The count may reset to zero on a redirect (the file is re-opened), so a smaller reading starts over.
+-- The byte count resets to zero when a redirect re-opens the file; a smaller reading restarts the throttle.
 -- Returns nil without a progress file.
 local function progressReporter(progress_path, index, total, name)
 	if not progress_path then return nil end
@@ -194,9 +193,8 @@ local function readBookProps(file)
 	return ok and props or nil
 end
 
--- Save a catalog's metadata for a downloaded book as KOReader custom metadata, showing in
--- Book information. Fills in what the book is missing — its own values, and anything the
--- reader customized, always win. A metadata-less book (e.g. a comic) gets the whole set.
+-- Save catalog metadata for a downloaded book as KOReader custom metadata (shown in
+-- Book information). Fills gaps only — the book's own values and the reader's edits always win.
 -- @param file string Path of the downloaded book
 -- @param metadata table|nil Catalog keys: title, authors, series, series_index, language, description
 -- @return boolean True if something was saved
@@ -212,7 +210,7 @@ function DownloadManager.saveMetadata(file, metadata)
 		if not props then
 			return false
 		end
-		local custom = {} -- the catalog fills gaps only; it never overwrites the book
+		local custom = {} -- gaps only; never overwrite the book
 		for _, key in ipairs(SAVED_PROP_KEYS) do
 			local value = metadata[key]
 			if propPresent(value, key) and propEmpty(props[key]) then
@@ -233,8 +231,7 @@ function DownloadManager.saveMetadata(file, metadata)
 	return ok and saved
 end
 
--- Save the description a catalog gave for a book as KOReader custom book metadata, so that it shows in
--- Book information. A description the book carries itself is kept, and so is any custom metadata.
+-- Like saveMetadata, for a bare description string. The book's own description and any custom metadata win.
 -- @param file string Path of the downloaded book
 -- @param description string|nil Plain text description
 -- @return boolean True if the description was saved
@@ -269,7 +266,7 @@ function DownloadManager.downloadFile(browser, local_path, remote_url, username,
 	end
 
 	if parsed.scheme == "http" or parsed.scheme == "https" then
-		-- Create the file before asking the server, so that a place we can't write to fails at once, without a request
+		-- Create the file first so an unwritable path fails before the request is made
 		local file, open_error = io.open(local_path, "w")
 		if not file then
 			logger.warn("DownloadManager:downloadFile: could not open", local_path, open_error)
@@ -281,10 +278,8 @@ function DownloadManager.downloadFile(browser, local_path, remote_url, username,
 			return false
 		end
 		socketutil:set_timeout(socketutil.FILE_BLOCK_TIMEOUT, socketutil.FILE_TOTAL_TIMEOUT)
-		-- Redirects are followed by the client rather than by LuaSocket, which drops the credentials of a
-		-- redirect to the same server and sends the custom headers of the catalog to any other. The first
-		-- request writes to the file opened above; after a redirect it is opened again, which also empties
-		-- it of whatever the redirect said.
+		-- Follow redirects client-side: LuaSocket would drop same-server credentials and forward catalog headers elsewhere.
+		-- The first request reuses the file opened above; after a redirect it is re-opened, truncating any partial body.
 		local progress = type(options) == "table" and options.progress or nil
 		local first_request = true
 		code, headers, status, info = socket.skip(1, HttpClient.request({
