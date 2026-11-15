@@ -13,6 +13,7 @@ local TextWidget = require("ui/widget/textwidget")
 local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local Screen = Device.screen
+local UIUtils = require("ui.utils")
 local _ = require("gettext")
 local T = require("ffi/util").template
 
@@ -51,9 +52,13 @@ function DownloadProgressDialog:init()
 	end
 
 	local width = Screen:getWidth() - Screen:scaleBySize(80)
+	self.text_max_width = width
+	local title_face = Font:getFace("ffont")
+	self.title_face = title_face
+	-- TextWidget does not clip, so truncate by hand or long titles run off small screens
 	self.title_widget = TextWidget:new {
-		text = self.title or _("Downloading…"),
-		face = Font:getFace("ffont"),
+		text = UIUtils.truncateText(self.title or _("Downloading…"), title_face, width),
+		face = title_face,
 		bold = true,
 		max_width = width,
 	}
@@ -88,7 +93,7 @@ end
 function DownloadProgressDialog:setBook(title, index, total)
 	if self.book == title and self.index == index and self.total == total then return end
 	self.book, self.index, self.total = title, index, total
-	self.title_widget:setText(title or _("Downloading…"))
+	self.title_widget:setText(UIUtils.truncateText(title or _("Downloading…"), self.title_face, self.text_max_width))
 	self:reportBytes(0)
 end
 
