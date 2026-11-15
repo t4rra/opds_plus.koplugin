@@ -15,7 +15,6 @@ describe("DownloadManager", function()
 	local URL = HOST .. "/download/dune.epub"
 	local CATALOG = HOST .. "/opds"
 	local BODY = "PK-the-book"
-	local PROGRESS = "Downloading… (tap to cancel)"
 
 	local function load_manager()
 		local stubs = {
@@ -662,11 +661,14 @@ describe("DownloadManager", function()
 
 			assert.same({}, http.requests)
 			assert.equals(Constants.UI_TIMING.DOWNLOAD_SCHEDULE_DELAY, ui.scheduled[1].seconds)
-			assert.equals("Downloading…", ui:last().text)
-			assert.equals(Constants.UI_TIMING.NOTIFICATION_TIMEOUT, ui:last().timeout)
 
 			ui:run_scheduled()
 
+			local dialog = ui.shown[1]
+			assert.equals("DownloadProgressDialog", dialog.kind)
+			assert.equals("Dune.epub", dialog.book)
+			assert.equals(#BODY, dialog.bytes)
+			assert.equals(dialog, ui.closed[1])
 			assert.equals(BODY, fs.read(target))
 			assert.equals(target, arrived)
 			assert.equals("reader", http.requests[1].user)
@@ -738,7 +740,8 @@ describe("DownloadManager", function()
 			assert.same({}, browser.downloads)
 			assert.equals("contents of a.epub", fs.read(a.file))
 			assert.equals("contents of b.epub", fs.read(b.file))
-			assert.same({ PROGRESS, "2 books downloaded" }, ui:texts())
+			assert.same({ "2 books downloaded" }, ui:texts())
+			assert.equals("DownloadProgressDialog", ui.shown[1].kind)
 			assert.equals(ui.shown[1], ui.closed[1])
 			assert.is_true(browser.download_list_updated)
 			assert.equals(1, browser.updates)
@@ -769,7 +772,7 @@ describe("DownloadManager", function()
 			local count = DownloadManager.downloadDownloadList(browser)
 
 			assert.equals(0, count)
-			assert.same({ PROGRESS }, ui:texts())
+			assert.same({}, ui:texts())
 			assert.equals(0, state.dirty)
 			assert.equals(0, browser.updates)
 			assert.is_nil(browser.download_list_updated)
@@ -831,7 +834,7 @@ describe("DownloadManager", function()
 
 				assert.equals(1, count)
 				assert.same({ missing }, browser.downloads)
-				assert.same({}, ui.closed)
+				assert.equals("DownloadProgressDialog", ui.closed[1].kind)
 			end)
 
 			it("deletes a half-written file and keeps the book queued", function()
@@ -850,11 +853,6 @@ describe("DownloadManager", function()
 	describe("downloadPendingSyncs", function()
 		local browser
 
-		local function toasts()
-			local texts = ui:texts()
-			assert.equals(PROGRESS, table.remove(texts, 1))
-			return texts
-		end
 
 		before_each(function()
 			browser = new_browser({ sync = true })
@@ -870,7 +868,8 @@ describe("DownloadManager", function()
 			assert.same({}, list)
 			assert.equals("contents of a.epub", fs.read(a.file))
 			assert.equals("contents of b.epub", fs.read(b.file))
-			assert.same({ "2 books downloaded" }, toasts())
+			assert.equals(2, browser.sync_report.count)
+			assert.equals(2, #browser.sync_report.downloaded)
 			assert.equals(1, state.dirty)
 		end)
 
@@ -898,7 +897,7 @@ describe("DownloadManager", function()
 
 			assert.same({ other }, list)
 			assert.same({}, http.requests)
-			assert.same({}, toasts())
+			assert.equals(0, browser.sync_report.count)
 		end)
 
 		it("hands back the books already on the device instead of downloading them", function()
@@ -934,7 +933,7 @@ describe("DownloadManager", function()
 
 			DownloadManager.downloadPendingSyncs(browser, list)
 
-			assert.same({ "3 books downloaded" }, toasts())
+			assert.equals(3, browser.sync_report.count)
 		end)
 
 		it("does not count a book that was already there, even when its file is recent", function()
@@ -944,7 +943,7 @@ describe("DownloadManager", function()
 
 			DownloadManager.downloadPendingSyncs(browser, list)
 
-			assert.same({ "2 books downloaded" }, toasts())
+			assert.equals(2, browser.sync_report.count)
 		end)
 
 		it("says nothing when every book was already there", function()
@@ -955,22 +954,18 @@ describe("DownloadManager", function()
 			local duplicates = DownloadManager.downloadPendingSyncs(browser, list)
 
 			assert.equals(2, #duplicates)
-			assert.same({}, toasts())
+			assert.equals(0, browser.sync_report.count)
+			assert.same({}, browser.sync_report.downloaded)
 		end)
 
-		it("lets the notice time out when there are duplicates to ask about, so it does not cover the question", function()
+		it("reports the books that were already on the device for the summary", function()
 			local list = { entry("a.epub"), entry("b.epub") }
 			fs.write(dir .. "/b.epub", "mine")
 
 			DownloadManager.downloadPendingSyncs(browser, list)
 
-			assert.equals(Constants.UI_TIMING.DUPLICATE_NOTIFICATION_TIMEOUT, ui:last().timeout)
-		end)
-
-		it("keeps the notice until it is dismissed when there are none", function()
-			DownloadManager.downloadPendingSyncs(browser, { entry("a.epub") })
-
-			assert.is_nil(ui:last().timeout)
+			assert.equals(1, #browser.sync_report.duplicates)
+			assert.equals(1, browser.sync_report.count)
 		end)
 
 		it("passes each book's credentials and description on", function()
@@ -999,8 +994,8 @@ describe("DownloadManager", function()
 				assert.is_nil(duplicates)
 				assert.equals(1, #list)
 				assert.equals(dir .. "/b.epub", list[1].file)
-				assert.same({ "1 book downloaded" }, toasts())
-				assert.same({}, ui.closed)
+				assert.equals(1, browser.sync_report.count)
+				assert.equals("DownloadProgressDialog", ui.closed[1].kind)
 			end)
 
 			it("deletes a half-written file and keeps the book pending", function()

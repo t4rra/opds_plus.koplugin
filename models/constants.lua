@@ -95,10 +95,9 @@ local Constants = {
 
 	-- UI Timing (in seconds)
 	UI_TIMING = {
-		NOTIFICATION_TIMEOUT = 1,
-		DUPLICATE_NOTIFICATION_TIMEOUT = 3,
 		DOWNLOAD_SCHEDULE_DELAY = 1,
 		IMAGE_BATCH_DELAY = 0.2,
+		PROGRESS_POLL_INTERVAL = 0.25,
 	},
 
 	-- Cover downloads run in this many subprocesses at once; the UI polls them.

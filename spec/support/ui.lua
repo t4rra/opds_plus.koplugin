@@ -73,6 +73,17 @@ function M.new()
 
 	ui.UIManager = UIManager
 	ui.InfoMessage = widget_class("InfoMessage")
+	ui.DownloadProgressDialog = widget_class("DownloadProgressDialog", {
+		setBook = function(self, title, index, total)
+			self.book = title
+			self.index = index
+			self.total = total
+			self.bytes = 0
+		end,
+		reportBytes = function(self, bytes)
+			self.bytes = bytes
+		end,
+	})
 	ui.TrapWidget = widget_class("TrapWidget")
 	function ui.TrapWidget:handleEvent() end
 	function ui.TrapWidget:onCloseWidget() end
@@ -125,6 +136,7 @@ function M.new()
 	ui.stubs = {
 		["ui/uimanager"] = UIManager,
 		["ui/widget/infomessage"] = ui.InfoMessage,
+		["ui.dialogs.download_progress_dialog"] = ui.DownloadProgressDialog,
 		["ui/widget/trapwidget"] = ui.TrapWidget,
 		["ui/widget/confirmbox"] = ui.ConfirmBox,
 		["ui/widget/buttondialog"] = ui.ButtonDialog,
