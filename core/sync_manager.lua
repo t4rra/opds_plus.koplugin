@@ -19,6 +19,7 @@ local DownloadManager = require("core.download_manager")
 local MirrorSync = require("core.mirror_sync")
 local StateManager = require("core.state_manager")
 local CatalogUtils = require("utils.catalog_utils")
+local N_ = _.ngettext
 
 local SyncManager = {}
 
@@ -154,6 +155,7 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 
 	browser.sync = true
 	browser.mirror_results = {}
+	browser.sync_report = nil
 	local info = InfoMessage:new {
 		text = _("Synchronizing lists…"),
 	}
@@ -167,29 +169,29 @@ function SyncManager.checkAndStartSync(browser, server_idx)
 		end
 	end)
 
+	-- Drop anything that can never be downloaded (stale queue entries of catalogs no longer
+	-- flagged for sync, duplicate entries for the same file) before downloading
+	SyncManager.prunePendingSyncs(browser)
+	SyncManager.pruneMirrorManifests(browser)
+
 	UIManager:close(info)
 	browser.sync = false
 
 	if not ok then
 		logger.err("OPDS Plus: sync failed:", err)
-		UIManager:show(InfoMessage:new {
-			text = T(_("Sync failed:\n%1"), tostring(err)),
-		})
-		-- failed sync may still have deleted files first
-		SyncManager.reportMirrorResults(browser)
+		-- failed sync may still have deleted files first; the summary lists them under one dialog
+		SyncManager.showSyncSummary(browser, err)
 		return
 	end
 
 	if #browser.pending_syncs > 0 then
 		Trapper:wrap(function()
+			-- shows the summary dialog itself when the download ends
 			SyncManager.downloadPendingSyncs(browser)
 		end)
 	else
-		UIManager:show(InfoMessage:new {
-			text = _("Up to date!"),
-		})
+		SyncManager.showSyncSummary(browser)
 	end
-	SyncManager.reportMirrorResults(browser)
 end
 
 --- Fill pending syncs list for a specific server
@@ -406,32 +408,93 @@ function SyncManager.getSyncDownloadList(browser, url_arg)
 	return sync_table
 end
 
---- Download all pending sync items and handle duplicates
+--- Download all pending sync items; ends with the summary dialog
+-- The download manager stashes the outcome on browser.sync_report; the summary reads and resets it.
 -- @param browser table OPDSBrowser instance
 function SyncManager.downloadPendingSyncs(browser)
 	local dl_list = browser.pending_syncs
 	local before = {}
 	for _, item in ipairs(dl_list) do before[item] = true end
-	local duplicate_list = DownloadManager.downloadPendingSyncs(browser, dl_list)
-	SyncManager.trackMirrorDownloads(browser, dl_list, before)
-
-	if duplicate_list and #duplicate_list > 0 then
-		SyncManager.showDuplicateFilesDialog(browser, dl_list, duplicate_list)
+	DownloadManager.downloadPendingSyncs(browser, dl_list)
+	-- duplicates left the queue undownloaded; keep Mirror Sync from adopting them (matched by path: the fork re-encodes the tables)
+	local skipped_duplicates = {}
+	for _, item in ipairs(browser.sync_report and browser.sync_report.duplicates or {}) do
+		skipped_duplicates[item.file] = true
 	end
+	local ok, err = pcall(SyncManager.trackMirrorDownloads, browser, dl_list, before, skipped_duplicates)
+	if not ok then
+		logger.err("OPDS Plus: could not update the mirror manifest:", err)
+	end
+	SyncManager.showSyncSummary(browser)
+end
+
+--- Drop queue items that can never download: unflagged catalogs and duplicate entries for the same file
+function SyncManager.prunePendingSyncs(browser)
+	local pending = browser.pending_syncs
+	if type(pending) ~= "table" then return end
+	local sync_catalogs = {}
+	for _, server in ipairs(browser.servers or {}) do
+		if server.sync or server.mirror then
+			sync_catalogs[server.url] = true
+		end
+	end
+	-- scan from the end so the newest copy of a book (queued by this run) wins
+	local seen = {}
+	local pruned = 0
+	for index = #pending, 1, -1 do
+		local item = pending[index]
+		local file = item and item.file
+		if not file or not (item.catalog and sync_catalogs[item.catalog]) or seen[file] then
+			table.remove(pending, index)
+			pruned = pruned + 1
+		else
+			seen[file] = true
+		end
+	end
+	if pruned > 0 then
+		logger.info("OPDS Plus: dropped", pruned, "stale item(s) from the sync queue")
+	end
+end
+
+--- Forget mirror manifests of catalogs no longer set to mirror; the books stay on disk
+function SyncManager.pruneMirrorManifests(browser)
+	local sync_dir = browser.settings and browser.settings.sync_dir
+	if not sync_dir then return end
+	local mirror_catalogs = {}
+	for _, server in ipairs(browser.servers or {}) do
+		if server.mirror then
+			mirror_catalogs[server.url] = true
+		end
+	end
+	local manifest = MirrorSync.load(sync_dir)
+	if type(manifest) ~= "table" or type(manifest.catalogs) ~= "table" then return end
+	local pruned = {}
+	for catalog_url in pairs(manifest.catalogs) do
+		if not mirror_catalogs[catalog_url] then
+			pruned[#pruned + 1] = catalog_url
+		end
+	end
+	if #pruned == 0 then return end
+	logger.info("OPDS Plus: forgetting mirror manifest for", table.concat(pruned, ", "))
+	for _, catalog_url in ipairs(pruned) do
+		manifest.catalogs[catalog_url] = nil
+	end
+	MirrorSync.save(sync_dir, manifest)
 end
 
 --- adopt mirror items that left the queue (i.e. downloaded) into the manifest
 -- @param browser table OPDSBrowser instance
 -- @param dl_list table items after the download (mutated in place)
 -- @param before table set (item -> true) of items pending before the download
-function SyncManager.trackMirrorDownloads(browser, dl_list, before)
+-- @param skipped_duplicates table|nil set (file -> true) of items left because they were already on the device
+function SyncManager.trackMirrorDownloads(browser, dl_list, before, skipped_duplicates)
 	local sync_dir = browser.settings and browser.settings.sync_dir
 	if not sync_dir then return end
 	local still = {}
 	for _, item in ipairs(dl_list) do still[item] = true end
 	local succeeded = {}
 	for item in pairs(before) do
-		if item.mirror and not still[item] then
+		if item.mirror and not still[item] and not (skipped_duplicates and skipped_duplicates[item.file]) then
 			succeeded[#succeeded + 1] = item
 		end
 	end
@@ -448,107 +511,123 @@ function SyncManager.trackMirrorDownloads(browser, dl_list, before)
 	MirrorSync.save(sync_dir, manifest)
 end
 
---- report mirror deletions; resets per-run results
+--- One dialog for the end of a sync: counts of added/removed/not downloaded/already-on-device books.
+-- With duplicates it also offers Do nothing / Overwrite / Download copies.
+-- Reads and resets browser.sync_report and browser.mirror_results.
 -- @param browser table OPDSBrowser instance
-function SyncManager.reportMirrorResults(browser)
+-- @param sync_error string|nil Why the sync aborted, if it did
+function SyncManager.showSyncSummary(browser, sync_error)
+	local report = browser.sync_report
+	browser.sync_report = nil
 	local results = browser.mirror_results
 	browser.mirror_results = {}
-	if type(results) ~= "table" then
-		return
+
+	local lines = {}
+	local function section(title, count)
+		if count == 0 then return end
+		if #lines > 0 and lines[#lines] ~= "" then
+			table.insert(lines, "")
+		end
+		table.insert(lines, T(N_("%1: %2 book", "%1: %2 books", count), title, count))
 	end
-	local deleted, failed = 0, 0
-	local incomplete, empty = false, false
-	for _, result in pairs(results) do
-		if type(result) == "table" then
-			deleted = deleted + (result.deleted and #result.deleted or 0)
-			failed = failed + (result.failed and #result.failed or 0)
-			if result.skipped == "incomplete" then incomplete = true end
-			if result.skipped == "empty" then empty = true end
+
+	if sync_error then
+		table.insert(lines, T(_("Sync failed:\n%1"), tostring(sync_error)))
+		table.insert(lines, "")
+	end
+
+	section(_("Added"), report and report.downloaded and #report.downloaded or 0)
+
+	-- Everything the mirror catalogs deleted from the sync folder
+	local removed, undeletable, incomplete, empty = 0, 0, false, false
+	if type(results) == "table" then
+		for _, result in pairs(results) do
+			if type(result) == "table" then
+				removed = removed + (result.deleted and #result.deleted or 0)
+				undeletable = undeletable + (result.failed and #result.failed or 0)
+				if result.skipped == "incomplete" then incomplete = true end
+				if result.skipped == "empty" then empty = true end
+			end
 		end
 	end
-	local lines = {}
-	if deleted > 0 then
-		table.insert(lines, T(_("Mirror sync: removed %1 book(s) that are no longer in the catalog."), deleted))
-	end
+	section(_("Removed"), removed)
+
+	section(_("Not downloaded"), report and report.failed and #report.failed or 0)
+
+	local duplicates = report and report.duplicates or {}
+	section(_("Already on the device"), #duplicates)
+
 	if incomplete then
 		table.insert(lines, _("Mirror sync: the catalog feed could not be fully read; no local files were deleted."))
 	end
 	if empty then
 		table.insert(lines, _("Mirror sync: the catalog feed is empty; no local files were deleted."))
 	end
-	if failed > 0 then
-		table.insert(lines, T(_("Mirror sync: %1 file(s) could not be deleted."), failed))
+	if undeletable > 0 then
+		table.insert(lines, T(_("Mirror sync: %1 file(s) could not be deleted."), undeletable))
+	end
+	if report and report.interrupted then
+		table.insert(lines, _("Sync was cancelled; some books may be missing."))
 	end
 	if #lines == 0 then
-		return
+		table.insert(lines, _("Up to date — nothing was added or removed."))
 	end
-	UIManager:show(InfoMessage:new {
-		text = table.concat(lines, "\n"),
-	})
-end
 
---- Show dialog for handling duplicate files during sync
--- @param browser table OPDSBrowser instance
--- @param dl_list table Download list
--- @param duplicate_list table List of duplicate files
-function SyncManager.showDuplicateFilesDialog(browser, dl_list, duplicate_list)
-	local duplicate_files = { _("These files are already on the device:") }
-	for _, entry in ipairs(duplicate_list) do
-		table.insert(duplicate_files, entry.file)
-	end
-	local text = table.concat(duplicate_files, "\n")
-
-	local textviewer
-	textviewer = TextViewer:new {
-		title = _("Duplicate files"),
-		text = text,
+	local viewer
+	local buttons_table
+	if #duplicates > 0 then
+		local function redownload(transform)
+			browser.sync_force = true
+			for _, entry in ipairs(duplicates) do
+				if transform then
+					transform(entry)
+				end
+				table.insert(browser.pending_syncs, entry)
+			end
+			Trapper:wrap(function()
+				SyncManager.downloadPendingSyncs(browser)
+			end)
+			-- sync_force is for this re-download only; don't leak it to later syncs
+			browser.sync_force = nil
+		end
 		buttons_table = {
 			{
 				{
 					text = _("Do nothing"),
 					callback = function()
-						textviewer:onClose()
-					end
+						viewer:onClose()
+					end,
 				},
 				{
 					text = _("Overwrite"),
 					callback = function()
-						browser.sync_force = true
-						textviewer:onClose()
-						for _, entry in ipairs(duplicate_list) do
-							table.insert(dl_list, entry)
-						end
-						Trapper:wrap(function()
-							DownloadManager.downloadPendingSyncs(browser, dl_list)
-						end)
-					end
+						viewer:onClose()
+						redownload()
+					end,
 				},
 				{
 					text = _("Download copies"),
 					callback = function()
-						browser.sync_force = true
-						textviewer:onClose()
-						local copies_dir = "copies"
-						local original_dir = util.splitFilePathName(duplicate_list[1].file)
-						local copy_download_dir = original_dir .. copies_dir .. "/"
+						viewer:onClose()
+						local original_dir = util.splitFilePathName(duplicates[1].file)
+						local copy_download_dir = original_dir .. "copies" .. "/"
 						util.makePath(copy_download_dir)
-
-						for _, entry in ipairs(duplicate_list) do
+						redownload(function(entry)
 							local _, file_name = util.splitFilePathName(entry.file)
-							local copy_download_path = copy_download_dir .. file_name
-							entry.file = copy_download_path
-							table.insert(dl_list, entry)
-						end
-
-						Trapper:wrap(function()
-							DownloadManager.downloadPendingSyncs(browser, dl_list)
+							entry.file = copy_download_dir .. file_name
 						end)
-					end
+					end,
 				},
 			},
-		},
+		}
+	end
+	viewer = TextViewer:new {
+		title = sync_error and _("Sync failed") or _("Sync complete"),
+		text = table.concat(lines, "\n"),
+		buttons_table = buttons_table,
 	}
-	UIManager:show(textviewer)
+	UIManager:show(viewer)
+	return viewer
 end
 
 return SyncManager

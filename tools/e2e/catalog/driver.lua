@@ -615,8 +615,9 @@ local function syncgesture_steps()
             c.check("B.requests_once_online", fetches.n > 0, fetches.n)
             fetches.restore()
             wait_for(function()
-                return count_files(dir, ".epub") >= 3 and toast_has("3 books downloaded")
+                return count_files(dir, ".epub") >= 3 and toast_has("Added: 3 books")
             end, 40, function(ok)
+                close_window_with_text("Added: 3 books")
                 c.check("B.books_downloaded", ok, count_files(dir, ".epub") .. " files")
                 c.check("B.last_download_recorded", (server.last_download or ""):find("/dl/903.epub", 1, true),
                     server.last_download)
@@ -631,6 +632,7 @@ local function syncgesture_steps()
             reset_toasts()
             p:onStartOPDSSyncAllCatalogs()
             c.check("B2.up_to_date_when_nothing_new", toast_has("Up to date"))
+            close_window_with_text("Up to date")
             close_browser(p)
         end,
         -- C: a failure while reading a feed must not leave the browser stuck in sync mode
@@ -647,7 +649,7 @@ local function syncgesture_steps()
             c.check("C.sync_flag_cleared", not b.sync)
             c.check("C.progress_message_closed", not window_has_text("Synchronizing"))
             c.check("C.reports_failure", toast_has("Sync failed"))
-            close_window_with_text("Synchronizing")
+            close_window_with_text("Sync failed")
             close_browser(p)
             remove_server(p, server)
             p.settings.sync_dir = nil
@@ -689,7 +691,7 @@ local function syncguards_steps()
                     c.check(case.name .. ".books", files == case.books, files .. " of " .. case.books)
                     c.check(case.name .. ".last_download", (server.last_download or ""):find(case.newest, 1, true),
                         server.last_download)
-                    close_window_with_text("Synchronizing")
+                    close_window_with_text("Added: ")
                     remove_server(p, server)
                     close_browser(p)
                     p.settings.sync_dir = nil
@@ -2965,7 +2967,7 @@ local function descsave_steps()
             end
             p:onStartOPDSSyncAllCatalogs()
             wait_for(function()
-                return count_files(sync_dir, ".epub") >= 2 and toast_has("2 books downloaded")
+                return count_files(sync_dir, ".epub") >= 2 and toast_has("Added: 2 books")
             end, 40, function(done)
                 DownloadManager.downloadPendingSyncs = original
                 c.check("sync.downloads_the_books", done, count_files(sync_dir, ".epub") .. " files")
@@ -2973,7 +2975,7 @@ local function descsave_steps()
                     queued_info("Desc Sync E"))
                 c.check("sync.queues_nothing_for_a_bare_entry", queued_info("Desc Sync F") == "",
                     queued_info("Desc Sync F"))
-                close_window_with_text("books downloaded")
+                close_window_with_text("Added: 2 books")
                 local with_text, without_text = find_book(sync_dir, "Desc Sync E"), find_book(sync_dir, "Desc Sync F")
                 local meta = with_text and custom_metadata(with_text)
                 c.check("sync.saves_the_description", meta and meta.custom.description == "Catalog text for sync E.",
@@ -3391,7 +3393,7 @@ local function customheaders_steps()
     -- they would cover the screenshots.
     local function dismiss_popups()
         for _, fragment in ipairs({ "Failed to authenticate", "Cannot get catalog info", "Documents will be rendered",
-                "books downloaded" }) do
+                "Added: " }) do
             close_window_with_text(fragment)
         end
     end
@@ -3663,8 +3665,9 @@ local function customheaders_steps()
             reset_toasts()
             p:onStartOPDSSyncAllCatalogs()
             wait_for(function()
-                return count_files(sync_dir, ".epub") >= 10 and toast_has("10 books downloaded")
+                return count_files(sync_dir, ".epub") >= 10 and toast_has("Added: 10 books")
             end, 60, function(ok)
+                close_window_with_text("Added: 10 books")
                 c.check("with.sync_downloads_every_book", ok, count_files(sync_dir, ".epub") .. " files")
                 c.check("with.sync_leaves_no_browser", p.opds_browser == nil)
                 close_browser(p)

@@ -1,10 +1,12 @@
 local helper = require("helper")
 local ui_stub = require("support.ui")
 local registry_stub = require("support.documentregistry")
+local luasettings = require("support.luasettings")
 
 describe("SyncManager", function()
 	local SyncManager, DownloadManager, Constants
 	local ui, state, device, registry, chooser, downloads, duplicates_to_return, dir
+	local fs = helper.fs
 
 	local SERVER_URL = "https://library.example.org/opds"
 	local BOOKS = "https://library.example.org/dl/"
@@ -17,6 +19,7 @@ describe("SyncManager", function()
 			docsettings = {},
 			["socket.http"] = {},
 			socketutil = {},
+			luasettings = luasettings,
 			["ui/downloadmgr"] = chooser,
 			["core.state_manager"] = {
 				getInstance = function()
@@ -38,6 +41,16 @@ describe("SyncManager", function()
 				snapshot[index] = item
 			end
 			downloads[#downloads + 1] = { list = snapshot, forced = browser.sync_force }
+			for index = #dl_list, 1, -1 do
+				table.remove(dl_list, index)
+			end
+			browser.sync_report = {
+				count = #snapshot,
+				downloaded = snapshot,
+				failed = {},
+				interrupted = false,
+				duplicates = duplicates_to_return,
+			}
 			return duplicates_to_return
 		end
 	end
@@ -131,6 +144,64 @@ describe("SyncManager", function()
 	end)
 
 	after_each(helper.reset)
+
+	describe("queue and mirror cleanup", function()
+		it("drops queue entries of catalogs no longer set to sync, keeping the rest", function()
+			local browser = new_browser({})
+			browser.servers = {
+				new_server({ url = "https://kept.example.org/opds", sync = true }),
+				new_server({ url = "https://gone.example.org/opds", sync = false }),
+			}
+			browser.pending_syncs = {
+				{ file = "/sync/a.epub", catalog = "https://kept.example.org/opds", url = "https://kept.example.org/1.epub" },
+				{ file = "/sync/b.epub", catalog = "https://gone.example.org/opds", url = "https://kept.example.org/2.epub" },
+			}
+
+			SyncManager.prunePendingSyncs(browser)
+
+			assert.same({ "/sync/a.epub" }, { browser.pending_syncs[1].file })
+		end)
+
+		it("keeps only the newest copy of a book queued from the same catalog", function()
+			local browser = new_browser({})
+			browser.servers = { new_server({ url = SERVER_URL, sync = true }) }
+			browser.pending_syncs = {
+				{ file = "/sync/a.epub", catalog = SERVER_URL, url = BOOKS .. "old-try.epub" },
+				{ file = "/sync/b.epub", catalog = SERVER_URL, url = BOOKS .. "other.epub" },
+				{ file = "/sync/a.epub", catalog = SERVER_URL, url = BOOKS .. "fresh-try.epub" },
+			}
+
+			SyncManager.prunePendingSyncs(browser)
+
+			assert.same({ "/sync/b.epub", "/sync/a.epub" }, { browser.pending_syncs[1].file, browser.pending_syncs[2].file })
+			assert.equals(BOOKS .. "fresh-try.epub", browser.pending_syncs[2].url)
+		end)
+
+		it("forgets the mirror manifest of catalogs no longer set to mirror, but not their files", function()
+			local MirrorSync = require("core.mirror_sync")
+			fs.write(dir .. "/Two.epub", "downloaded:2")
+			local manifest = MirrorSync.load(dir)
+			manifest.catalogs = {
+				[SERVER_URL] = { b1 = { file = "Book One.epub" } },
+				["https://regular.example.org/opds"] = { b2 = { file = "Two.epub" } },
+				["https://gone.example.org/opds"] = { b3 = { file = "Three.epub" } },
+			}
+			MirrorSync.save(dir, manifest)
+
+			local browser = new_browser({}, { settings = { sync_dir = dir } })
+			browser.servers = {
+				new_server({ url = SERVER_URL, mirror = true, sync = false }),
+				new_server({ url = "https://regular.example.org/opds", sync = true, mirror = false }),
+			}
+			SyncManager.pruneMirrorManifests(browser)
+
+			local after = MirrorSync.load(dir)
+			assert.is_table(after.catalogs[SERVER_URL])
+			assert.is_nil(after.catalogs["https://regular.example.org/opds"])
+			assert.is_nil(after.catalogs["https://gone.example.org/opds"])
+			assert.is_true(fs.exists(dir .. "/Two.epub"))
+		end)
+	end)
 
 	describe("parseFiletypes", function()
 		it("is nil without a list, which means every type", function()
@@ -525,7 +596,7 @@ describe("SyncManager", function()
 
 			SyncManager.checkAndStartSync(browser)
 
-			assert.equals("Up to date!", ui:last().text)
+			assert.truthy(ui:last().text:find("Up to date", 1, true))
 			assert.same({}, downloads)
 		end)
 
@@ -563,7 +634,13 @@ describe("SyncManager", function()
 
 			assert.equals(1, #downloads)
 			assert.same({ entry }, downloads[1].list)
-			assert.same({}, ui.shown)
+			-- one summary dialog, without the duplicate actions
+			local viewer = ui:last()
+			assert.equals("TextViewer", viewer.kind)
+			assert.equals("Sync complete", viewer.title)
+			assert.is_nil(viewer.buttons_table)
+			assert.truthy(viewer.text:find("Added: 1 book", 1, true))
+			assert.is_nil(viewer.text:find("Dune.epub", 1, true))
 		end)
 
 		describe("when books were already on the device", function()
@@ -575,16 +652,17 @@ describe("SyncManager", function()
 				duplicate_viewer = ui:last()
 			end)
 
-			it("lists them in a dialog", function()
+			it("lists them in the summary dialog", function()
 				assert.equals("TextViewer", duplicate_viewer.kind)
-				assert.equals("Duplicate files", duplicate_viewer.title)
-				assert.equals("These files are already on the device:\n" .. dir .. "/Dune.epub", duplicate_viewer.text)
+				assert.equals("Sync complete", duplicate_viewer.title)
+				assert.truthy(duplicate_viewer.text:find("Already on the device: 1 book", 1, true))
+				assert.is_nil(duplicate_viewer.text:find("Dune.epub", 1, true))
 			end)
 
 			it("does nothing more when the user says so", function()
 				ui:press(duplicate_viewer, "Do nothing")
 
-				assert.equals(duplicate_viewer, ui.closed[1])
+				assert.equals(duplicate_viewer, ui.closed[#ui.closed])
 				assert.equals(1, #downloads)
 				assert.is_nil(browser.sync_force)
 			end)
@@ -592,7 +670,7 @@ describe("SyncManager", function()
 			it("downloads them again over the old files when the user wants that", function()
 				ui:press(duplicate_viewer, "Overwrite")
 
-				assert.equals(duplicate_viewer, ui.closed[1])
+				assert.equals(duplicate_viewer, ui.closed[#ui.closed])
 				assert.equals(2, #downloads)
 				assert.is_true(downloads[2].forced)
 				assert.equals(dir .. "/Dune.epub", downloads[2].list[#downloads[2].list].file)

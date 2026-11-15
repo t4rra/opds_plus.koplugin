@@ -46,13 +46,24 @@ describe("Mirror sync", function()
 				snapshot[index] = item
 			end
 			downloads[#downloads + 1] = { list = snapshot, forced = browser.sync_force }
+			local downloaded, failed = {}, {}
 			for index = #dl_list, 1, -1 do
 				local item = dl_list[index]
 				if not should_fail[item.file] and not fs.exists(item.file) then
 					fs.write(item.file, "downloaded: " .. item.url)
+					downloaded[#downloaded + 1] = item
 					table.remove(dl_list, index)
 				end
 			end
+			for _, item in ipairs(dl_list) do
+				failed[#failed + 1] = item
+			end
+			browser.sync_report = {
+				count = #downloaded,
+				downloaded = downloaded,
+				failed = failed,
+				interrupted = false,
+			}
 			return nil
 		end
 	end
@@ -182,7 +193,7 @@ describe("Mirror sync", function()
 
 		assert.same({}, downloads)
 		assert.same({}, browser.pending_syncs)
-		assert.equals("Up to date!", ui:last().text)
+		assert.truthy(ui:last().text:find("Up to date", 1, true))
 		assert.is_true(fs.exists(dir .. "/Book One.epub"))
 		assert.is_true(fs.exists(dir .. "/Book Two.epub"))
 		assert.is_nil(ui:last().text:find("Mirror sync", 1, true))
@@ -207,8 +218,7 @@ describe("Mirror sync", function()
 		assert.is_table(manifest.catalogs[SERVER_URL]["b1"])
 
 		local joined = table.concat(ui:texts(), "\n")
-		assert.truthy(joined:find("Mirror sync", 1, true))
-		assert.truthy(joined:find("removed 1 book", 1, true))
+		assert.truthy(joined:find("Removed: 1 book", 1, true))
 	end)
 
 	it("deletes nothing when a later feed page cannot be read", function()
