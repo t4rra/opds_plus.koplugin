@@ -289,6 +289,7 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 	local headers = RequestHeaders.copy(item and item.headers) or {}
 
 	local dialog, check_button_raw_names, check_button_sync_catalog, check_button_mirror_sync, check_button_stream_sync
+	local sync_enabled = item and item.sync and true or false
 
 	-- Kept short: it shares the row with Cancel and Save, and a longer label is cut off once a count is added
 	local function headersButtonText()
@@ -418,10 +419,20 @@ function OPDSMenuBuilder.buildCatalogEditDialog(browser, item)
 		text = _("Sync catalog"),
 		checked = item and item.sync,
 		parent = dialog,
+		callback = function()
+			if check_button_sync_catalog.checked then
+				check_button_mirror_sync:enable()
+			else
+				-- Mirror Sync implies the catalog is synced, so it goes off with Sync catalog
+				check_button_mirror_sync:disable()
+			end
+		end,
 	}
 	check_button_mirror_sync = CheckButton:new {
 		text = _("Mirror Sync"),
 		checked = item and item.mirror == true,
+		-- Mirror Sync is only available while Sync catalog is ticked
+		enabled = sync_enabled,
 		parent = dialog,
 	}
 	check_button_stream_sync = CheckButton:new {

@@ -117,7 +117,8 @@ Both actions are also in KOReader's gesture manager as **OPDS Plus: Sync all cat
 sync all catalogs**.
 
 **Mirror Sync**: In a catalog's **Edit** dialog there is a **Mirror Sync** checkbox, below **Sync catalog**.
-Ticking it implies the catalog is synced. Mirror Sync makes the sync folder a true mirror of the catalog: the
+Ticking it implies the catalog is synced. Mirror Sync can only be ticked while **Sync catalog** is ticked:
+unticking **Sync catalog** greys the checkbox out and unticks it. Mirror Sync makes the sync folder a true mirror of the catalog: the
 plugin tracks the books it downloaded for that catalog, and whenever the catalog no longer lists one, the tracked
 local file is deleted during the next sync.
 
