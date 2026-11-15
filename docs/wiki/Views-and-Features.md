@@ -6,7 +6,7 @@ Settings are under **OPDS Plus Catalog → Settings** and are kept between sessi
 
 | List View | Grid View |
 | :---: | :---: |
-| ![List View](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/list_view.png) | ![Grid View](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/grid_view.png) |
+| ![List View](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/list_view.png) | ![Grid View](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/grid_view.png) |
 
 - **List View** shows each book's cover next to its title, authors and series. **Cover Size** (under **List View
   Settings**) has presets from Compact (8% of the screen height) to Extra Large (20%), or a custom size from 5% to
@@ -16,7 +16,7 @@ Settings are under **OPDS Plus Catalog → Settings** and are kept between sessi
 - Switch between them with the menu at the top left of a catalog page (**Switch to Grid View** / **Switch to List
   View**), or set the default under **Settings → Display Mode**.
 
-![The menu of a catalog page](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/view_toggle_menu.png)
+![The menu of a catalog page](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/view_toggle_menu.png)
 
 ## Fonts and text
 
@@ -25,7 +25,7 @@ font for both, and the colour of the details.
 
 ## Book details and downloads
 
-![Book details](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/book_details.png)
+![Book details](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/book_details.png)
 
 Tapping a book opens its details: cover, authors, series and number, publisher, publication date, language,
 description and the formats you can download, when the catalog provides them. From there you can download a
@@ -90,7 +90,7 @@ until that request finishes; **Cancel** leaves the current page alone. This is i
 download setting. It does not speed up the server itself, and final widget construction still uses the UI
 thread.
 
-![Facets of a catalog](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/opds2_facets.png)
+![Facets of a catalog](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/opds2_facets.png)
 
 ## Custom HTTP headers
 

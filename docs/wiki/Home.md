@@ -5,7 +5,7 @@ and downloading books straight to your e-reader. It reads OPDS 1 and OPDS 2.0 ca
 
 | List View | Grid View |
 | :---: | :---: |
-| ![List View](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/list_view.png) | ![Grid View](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/grid_view.png) |
+| ![List View](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/list_view.png) | ![Grid View](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/grid_view.png) |
 
 ## Start here
 
@@ -17,7 +17,7 @@ and downloading books straight to your e-reader. It reads OPDS 1 and OPDS 2.0 ca
 
 ## Links
 
-- [Latest release](https://github.com/greywolf1499/opds_plus.koplugin/releases/latest)
-- [Changelog](https://github.com/greywolf1499/opds_plus.koplugin/blob/main/CHANGELOG.md)
-- [Security policy and privacy](https://github.com/greywolf1499/opds_plus.koplugin/blob/main/SECURITY.md)
-- [Report a bug or ask for a feature](https://github.com/greywolf1499/opds_plus.koplugin/issues)
+- [Latest release](https://github.com/t4rra/opds_plus.koplugin/releases/latest)
+- [Changelog](https://github.com/t4rra/opds_plus.koplugin/blob/main/CHANGELOG.md)
+- [Security policy and privacy](https://github.com/t4rra/opds_plus.koplugin/blob/main/SECURITY.md)
+- [Report a bug or ask for a feature](https://github.com/t4rra/opds_plus.koplugin/issues)

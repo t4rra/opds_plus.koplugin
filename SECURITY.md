@@ -4,7 +4,7 @@
 
 Only the latest 1.x release of OPDS Plus gets security fixes. Please update before reporting, either from
 **OPDS Plus → Settings → Updates → Check for updates** (1.4.0 and later) or from the
-[releases page](https://github.com/greywolf1499/opds_plus.koplugin/releases/latest).
+[releases page](https://github.com/t4rra/opds_plus.koplugin/releases/latest).
 
 | Version        | Supported |
 | -------------- | --------- |
@@ -14,7 +14,7 @@ Only the latest 1.x release of OPDS Plus gets security fixes. Please update befo
 ## Reporting a vulnerability
 
 Please report vulnerabilities privately through GitHub:
-**[Report a vulnerability](https://github.com/greywolf1499/opds_plus.koplugin/security/advisories/new)**
+**[Report a vulnerability](https://github.com/t4rra/opds_plus.koplugin/security/advisories/new)**
 (the *Security* tab of this repository). Do not open a public issue for a security problem.
 
 OPDS Plus is maintained by one person in their spare time, so acknowledgement and fixes are best effort.

@@ -16,4 +16,4 @@
 **Help**
 
 - [Troubleshooting](Troubleshooting)
-- [Issues](https://github.com/greywolf1499/opds_plus.koplugin/issues)
+- [Issues](https://github.com/t4rra/opds_plus.koplugin/issues)

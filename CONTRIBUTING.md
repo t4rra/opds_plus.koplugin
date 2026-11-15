@@ -125,7 +125,7 @@ Fixes #123
 
 ### Wiki
 
-The [wiki](https://github.com/greywolf1499/opds_plus.koplugin/wiki) is generated from `docs/wiki/`: when a change
+The [wiki](https://github.com/t4rra/opds_plus.koplugin/wiki) is generated from `docs/wiki/`: when a change
 there reaches `main`, `.github/workflows/wiki-sync.yml` replaces the wiki's pages with those files. Edit the
 pages in `docs/wiki/` with a pull request, as with code; edits made in the wiki's web editor are overwritten by
 the next sync. Link between pages by their file name without `.md` (`[Updating](Updating)`), and to images by
@@ -227,7 +227,7 @@ opds_plus.koplugin/
 
 ```bash
 python3 scripts/build_release.py               # writes dist/opds_plus.koplugin.zip
-python3 scripts/build_release.py --tag v1.6.0  # also checks the version and writes dist/RELEASE_NOTES.md
+python3 scripts/build_release.py --tag v1.7.0-t4rra.1  # also checks the version and writes dist/RELEASE_NOTES.md
 python3 -m unittest discover -s scripts        # the build script's own tests
 ```
 

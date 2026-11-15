@@ -138,7 +138,7 @@ describe("the plugin tree", function()
 
 		assert.equals("opdsplus", meta.name)
 		assert.equals("OPDS Plus", meta.fullname)
-		assert.matches("^%d+%.%d+%.%d+$", meta.version)
+		assert.matches("^%d+%.%d+%.%d+%-?[0-9A-Za-z.-]*$", meta.version)
 		assert.equals(require("opds_plus_version").VERSION, meta.version)
 	end)
 

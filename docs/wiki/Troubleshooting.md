@@ -64,9 +64,9 @@ was interrupted, rename `opds_plus.koplugin.bak` back to `opds_plus.koplugin` in
 
 1. Turn on **Settings → Developer → Debug Mode** for more detailed logging.
 2. Repeat what went wrong.
-3. Open an [issue](https://github.com/greywolf1499/opds_plus.koplugin/issues) with your KOReader and OPDS Plus
+3. Open an [issue](https://github.com/t4rra/opds_plus.koplugin/issues) with your KOReader and OPDS Plus
    versions (**Settings → About OPDS Plus**), the server you use, and the lines of KOReader's `crash.log` from
    that moment. Remove passwords, API keys and private addresses from the log first.
 
 Security problems go through private reporting, as described in the
-[security policy](https://github.com/greywolf1499/opds_plus.koplugin/blob/main/SECURITY.md).
+[security policy](https://github.com/t4rra/opds_plus.koplugin/blob/main/SECURITY.md).

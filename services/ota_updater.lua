@@ -21,7 +21,7 @@ local TlsHostname = require("services.tls_hostname")
 
 local OtaUpdater = {}
 
-OtaUpdater.REPOSITORY = "greywolf1499/opds_plus.koplugin"
+OtaUpdater.REPOSITORY = "t4rra/opds_plus.koplugin"
 OtaUpdater.LATEST_URL = "https://api.github.com/repos/" .. OtaUpdater.REPOSITORY .. "/releases/latest"
 OtaUpdater.RELEASES_URL = "https://github.com/" .. OtaUpdater.REPOSITORY .. "/releases/latest"
 OtaUpdater.ASSET_NAME = "opds_plus.koplugin.zip"

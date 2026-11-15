@@ -5,7 +5,7 @@ OPDS Plus needs KOReader v2025.10 or later.
 ## Install the release
 
 1. Download `opds_plus.koplugin.zip` from the
-   [latest release](https://github.com/greywolf1499/opds_plus.koplugin/releases/latest).
+   [latest release](https://github.com/t4rra/opds_plus.koplugin/releases/latest).
 2. Extract it into the `plugins` folder of KOReader. The archive holds one folder, `opds_plus.koplugin`, which
    must keep that exact name. Where the `plugins` folder is depends on the device:
 
@@ -28,7 +28,7 @@ Once installed, later versions can be installed from within KOReader: see [Updat
 
 ```bash
 cd ~/.config/koreader/plugins/   # the plugins folder of your KOReader
-git clone https://github.com/greywolf1499/opds_plus.koplugin.git
+git clone https://github.com/t4rra/opds_plus.koplugin.git
 ```
 
 A plugin folder that is a link, or has a `.git` folder in it, is a development install. The in-app updater

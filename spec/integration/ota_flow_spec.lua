@@ -12,7 +12,7 @@ describe("OTA updater", function()
 	local OtaUpdater, http, archiver
 	local root, plugins, plugin_dir, cache_dir, ca_file
 
-	local ASSET_URL = "https://github.com/greywolf1499/opds_plus.koplugin/releases/download/v1.4.0/opds_plus.koplugin.zip"
+	local ASSET_URL = "https://github.com/t4rra/opds_plus.koplugin/releases/download/v1.4.0/opds_plus.koplugin.zip"
 	local CDN_URL = "https://objects.githubusercontent.com/asset/1"
 	local SIDECAR_URL = ASSET_URL .. ".sha256"
 
@@ -62,7 +62,7 @@ describe("OTA updater", function()
 			tag_name = "v1.4.0",
 			name = "1.4.0",
 			body = "notes",
-			html_url = "https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.4.0",
+			html_url = "https://github.com/t4rra/opds_plus.koplugin/releases/tag/v1.4.0",
 			draft = false,
 			prerelease = false,
 			assets = {

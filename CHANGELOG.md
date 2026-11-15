@@ -6,11 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [1.7.0-t4rra.1] - 2026-11-14
+
+**This is the first release of the t4rra fork** of [greywolf1499/opds_plus.koplugin](https://github.com/greywolf1499/opds_plus.koplugin). 
+
+**Update from within KOReader**: **OPDS Plus Catalog → Settings → Updates → Check for updates**, or install by hand.
+Neighboring-cover prefetch and streaming progress writes are both **off by default**.
+OAuth login and downloaded-book progress synchronization are not included.
+
 ### Added
 
-- **Catalog Metadata Saved with Downloads**: Downloaded books now get the catalog's title, authors, series, series index, language and description written as KOReader custom book metadata, filled in only where the book itself is missing it — this is how comic books (CBZ and friends, which carry no metadata of their own) get a full Book information page. A value the book already has, or one you edited yourself, is never replaced, and neither is custom metadata you set for the book. Covers single downloads, the download queue and sync (including Mirror Sync). The setting that enables this is renamed to **Save Metadata with Downloads** (it still defaults to on).
-- **Live Download Progress**: Downloads show a progress dialog with the current book, how many MB have arrived so far and, for batches, which book of how many is downloading. The figure updates while the transfer runs; tapping the notice cancels a batch.
-- **Mirror Sync**: A per-catalog **Mirror Sync** checkbox in the Edit dialog makes the sync folder a true mirror of the catalog. Books that are removed from the catalog on the server are deleted locally on the next sync. Deletion is tracked through a manifest kept in the sync folder (`.opds_plus_mirror.lua`), keyed by catalog entry identity rather than file name, so it does not depend on reversible or filesystem-safe titles. Only files downloaded by OPDS Plus for that catalog are deleted; an unreadable or empty feed deletes nothing; KOReader `.sdr` sidecars are kept.
+- **Catalog Metadata Saved with Downloads**: Downloaded books now get the catalog's title, authors, series, series index, language and description written as KOReader custom book metadata — helps formats like comics (CBZ). Preexisting/custom metadata preserved.
+- **Live Download Progress**
+- **Mirror Sync**: A per-catalog **Mirror Sync** checkbox in the Edit dialog. Books removed from catalog on server are deleted locally on sync. Tracked via a manifest in sync folder (`.opds_plus_mirror.lua`) so it only touches its own files.
 
 ### Fixed
 
@@ -18,10 +26,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Changed
 
-- **One Sync Summary**: One dialog at the end of a sync, instead of stacked popups, with counts of books added, removed by Mirror Sync, not downloaded and already on the device (no file names). Duplicate files keep their Do nothing / Overwrite / Download copies actions inside the same dialog.
-- **Compact Sync Summary**: The end-of-sync report now appears as a small notice (a small button dialog only when duplicates need a decision) instead of a full-screen viewer.
-- **Truncated Progress Notice Titles**: Long book titles in the download progress notice are truncated with an ellipsis instead of running off the screen on smaller devices.
+- **One Sync Summary at End of Sync**
+- **Compact Sync Summary**
+- **Truncated Progress Notice Titles**
 - **Sync Queue Cleanup**: Books of catalogs no longer flagged for sync are dropped from the persisted sync queue, duplicate queue entries for the same book are dropped (newest wins), and mirror manifests of catalogs no longer set to Mirror are forgotten (files untouched).
+- **Moved Menu to Search Page**
 
 ## [1.6.0] - 2026-11-11
 
@@ -34,7 +43,7 @@ OAuth login and downloaded-book progress synchronization are not included.
 - **Authentication Discovery**: Recognize OPDS authentication documents in protected responses or at a direct address, including advertised HTTP/Atom/OPDS 2 links. Show provider information, Basic field labels and unsupported-flow explanations in a scrollable viewer. Public catalogs keep their entries and offer an explicit information action. Linked discovery uses verified same-origin HTTPS without catalog credentials, custom headers or redirects. Existing Basic/self-signed catalogs are unchanged; OAuth login remains gated.
 - **Opt-in Streaming Progress Sync**: A per-catalog **Sync streaming progress** option pulls and reconciles Kavita/Komga page-stream positions and coalesces changes to painted pages into background server writes. Ask on conflicts, honor rewinds, preserve pending local state across errors/close/suspend, and recheck before/after writes. Credentials, stream identity or page-count changes require fresh reconciliation. Explain provider completion/reset behavior and non-atomic server APIs before enabling. Downloaded books and generic streams remain outside this feature.
 - **Neighboring Cover Prefetch**: An off-by-default Cover Settings option warms the disk cache for one neighboring display page while the current covers are ready and input is idle. It requires caching and parallel downloads, never decodes or draws speculative images, and cancels on navigation, dialogs and close. Thanks to @iav for the prefetch work proposed in issue #117.
-- **User Guide**: The [wiki](https://github.com/greywolf1499/opds_plus.koplugin/wiki) explains installing and updating OPDS Plus, its views and settings, setting up Calibre-Web, Kavita and Komga, OPDS 2.0 catalogs, and what to do about each error message.
+- **User Guide**: The [wiki](https://github.com/t4rra/opds_plus.koplugin/wiki) explains installing and updating OPDS Plus, its views and settings, setting up Calibre-Web, Kavita and Komga, OPDS 2.0 catalogs, and what to do about each error message.
 
 ### Changed
 
@@ -269,7 +278,8 @@ OAuth login and downloaded-book progress synchronization are not included.
 - Derivative of KOReader's built-in OPDS plugin with major UI/UX enhancements.
 - Licensed under AGPLv3 consistent with KOReader.
 
-[Unreleased]: https://github.com/greywolf1499/opds_plus.koplugin/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/t4rra/opds_plus.koplugin/compare/v1.7.0-t4rra.1...HEAD
+[1.7.0-t4rra.1]: https://github.com/t4rra/opds_plus.koplugin/releases/tag/v1.7.0-t4rra.1
 [1.6.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.6.0
 [1.5.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.5.0
 [1.4.0]: https://github.com/greywolf1499/opds_plus.koplugin/releases/tag/v1.4.0

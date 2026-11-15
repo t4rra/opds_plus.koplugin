@@ -17,7 +17,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-REPO = "greywolf1499/opds_plus.koplugin"
+REPO = "t4rra/opds_plus.koplugin"
 ASSET = "opds_plus.koplugin.zip"
 
 # same: the latest release is the installed version; good: a newer one; bad_digest: a newer one whose

@@ -25,7 +25,7 @@ are unchanged. Links and remote images in notes are not opened or fetched.
 If formatting fails, **View as plain text** opens the complete original notes with the same update controls.
 Cancelling that prompt does not install or skip the release.
 
-![Formatted release notes](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/update_available.png)
+![Formatted release notes](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/update_available.png)
 
 ## Weekly check
 
@@ -39,7 +39,7 @@ show a status that you can cancel with a tap or key. An automatic check is invis
 and is passed through to the screen underneath. It never turns Wi-Fi on. A manual check retains KOReader's
 usual Wi-Fi prompt/action when offline.
 
-![Cancellable manual update check](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/update_checking.png)
+![Cancellable manual update check](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/update_checking.png)
 
 Cancelled or watchdog-aborted checks leave **Last checked** unchanged and may retry on the next catalog open;
 there is no automatic retry loop. One check runs at a time, and manual checks replace automatic ones.
@@ -67,7 +67,7 @@ moved aside as the backup, and the folder it points to is not changed.
 
 A check is one request to `api.github.com` for the latest release of this repository, with the user agent
 `OPDSPlus/<version>`. GitHub sees your IP address, as with any request. Nothing else is sent, and OPDS Plus has
-no server of its own. The [security policy](https://github.com/greywolf1499/opds_plus.koplugin/blob/main/SECURITY.md)
+no server of its own. The [security policy](https://github.com/t4rra/opds_plus.koplugin/blob/main/SECURITY.md)
 describes how the updater checks connections and archives.
 
 ## When an update fails

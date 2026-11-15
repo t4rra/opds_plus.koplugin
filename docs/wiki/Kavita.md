@@ -59,7 +59,7 @@ replace a newer page or advance progress. If a worker cannot start, the plugin e
 rather than silently freezing input with a foreground retry; downloading the book remains an alternative.
 Image decoding and drawing still happen on the UI thread, so this is not a guarantee against slow rendering.
 
-![Cancellable loading over a synthetic page in the emulator](https://raw.githubusercontent.com/greywolf1499/opds_plus.koplugin/main/.github/screenshots/stream_loading.png)
+![Cancellable loading over a synthetic page in the emulator](https://raw.githubusercontent.com/t4rra/opds_plus.koplugin/main/.github/screenshots/stream_loading.png)
 
 ### Two-way streaming progress
 

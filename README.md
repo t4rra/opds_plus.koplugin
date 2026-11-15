@@ -2,16 +2,18 @@
 
 <div align="center">
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/greywolf1499/opds_plus.koplugin?style=for-the-badge&color=orange)
-![GitHub all releases](https://img.shields.io/github/downloads/greywolf1499/opds_plus.koplugin/total?style=for-the-badge&color=yellow)
-![GitHub](https://img.shields.io/github/license/greywolf1499/opds_plus.koplugin?style=for-the-badge&color=blue)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/t4rra/opds_plus.koplugin?style=for-the-badge&color=orange)
+![GitHub all releases](https://img.shields.io/github/downloads/t4rra/opds_plus.koplugin/total?style=for-the-badge&color=yellow)
+![GitHub](https://img.shields.io/github/license/t4rra/opds_plus.koplugin?style=for-the-badge&color=blue)
 ![Platform](https://img.shields.io/badge/Platform-KOReader-success?style=for-the-badge&logo=koreader)
 
 </div>
 
 # OPDS Plus - Enhanced OPDS Browser for KOReader
 
-**Version:** 1.6.0
+**Version:** 1.7.0-t4rra.1 (t4rra fork)
+
+> This is [t4rra](https://github.com/t4rra)'s fork of [greywolf1499/opds_plus.koplugin](https://github.com/greywolf1499/opds_plus.koplugin). Mainly adding *mirror sync* and improved metadata handling for comics. 
 
 **OPDS Plus** is a feature-rich enhancement of KOReader's built-in OPDS catalog browser, providing visual book cover displays, multiple viewing modes, and extensive customization options for browsing online book catalogs.
 
@@ -95,7 +97,7 @@ The screenshots come from a mock catalog of public-domain classics with generate
 ### Method 1: Manual Installation (Recommended)
 
 1. **Download the latest release**:
-   - Go to the [Releases](https://github.com/greywolf1499/opds_plus.koplugin/releases) page
+   - Go to the [Releases](https://github.com/t4rra/opds_plus.koplugin/releases) page
    - Download the `opds_plus.koplugin.zip` file from the latest release
 
 2. **Extract to KOReader plugins directory**:
@@ -127,12 +129,12 @@ The screenshots come from a mock catalog of public-domain classics with generate
 cd ~/.config/koreader/plugins/  # Adjust path for your system
 
 # Clone the repository
-git clone https://github.com/greywolf1499/opds_plus.koplugin.git
+git clone https://github.com/t4rra/opds_plus.koplugin.git
 
 # Restart KOReader
 ```
 
-The [wiki](https://github.com/greywolf1499/opds_plus.koplugin/wiki) has step-by-step guides for installing,
+The [wiki](https://github.com/t4rra/opds_plus.koplugin/wiki) has step-by-step guides for installing,
 updating, and setting up Calibre-Web, Kavita and Komga.
 
 ### Updating (New in 1.4.0)
@@ -423,7 +425,7 @@ opds_plus.koplugin/
     └── url_utils.lua
 ```
 
-The release archive holds exactly these files, plus `README.md`, `CHANGELOG.md` and `LICENSE`. The repository also has `spec/` (automated tests), `scripts/` (test tooling and the release build), `tools/` (end-to-end checks in a real KOReader), `docs/wiki/` (the source of the [wiki](https://github.com/greywolf1499/opds_plus.koplugin/wiki)) and `.github/` (CI), which are not part of the archive.
+The release archive holds exactly these files, plus `README.md`, `CHANGELOG.md` and `LICENSE`. The repository also has `spec/` (automated tests), `scripts/` (test tooling and the release build), `tools/` (end-to-end checks in a real KOReader), `docs/wiki/` (the source of the [wiki](https://github.com/t4rra/opds_plus.koplugin/wiki)) and `.github/` (CI), which are not part of the archive.
 
 ### Settings Storage
 Settings are stored in: `<KOReader data dir>/settings/opdsplus.lua`
@@ -494,8 +496,8 @@ See the [LICENSE](LICENSE) file for details.
 
 ## 📞 Support
 
-- **User Guide**: [OPDS Plus Wiki](https://github.com/greywolf1499/opds_plus.koplugin/wiki)
-- **Issues & Bug Reports**: [GitHub Issues](https://github.com/greywolf1499/opds_plus.koplugin/issues)
+- **User Guide**: [OPDS Plus Wiki](https://github.com/t4rra/opds_plus.koplugin/wiki)
+- **Issues & Bug Reports**: [GitHub Issues](https://github.com/t4rra/opds_plus.koplugin/issues)
 - **KOReader Documentation**: [KOReader Wiki](https://github.com/koreader/koreader/wiki)
 - **OPDS Specification**: [OPDS Spec](https://specs.opds.io/)
 
