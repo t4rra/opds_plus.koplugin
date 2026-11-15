@@ -67,6 +67,12 @@ function SettingsMenu.create(plugin)
 			end,
 		},
 		{
+			text = _("Sync all catalogs"),
+			callback = function()
+				plugin:onStartOPDSSyncAllCatalogs()
+			end,
+		},
+		{
 			text = _("Settings"),
 			sub_item_table = {
 				{
