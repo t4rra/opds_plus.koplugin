@@ -27,7 +27,7 @@ local function statusText(bytes, index, total)
 	local mb = string.format("%.1f", math.max(bytes or 0, 0) / 1048576)
 	local size = T(_("%1 MB"), mb)
 	if index and total and total > 1 then
-		return T(_("%1 · book %2 of %3 · %4 left"), size, index, total, total - index)
+		return T(_("%1 · book %2 of %3"), size, index, total)
 	end
 	return size
 end
